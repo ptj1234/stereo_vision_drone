@@ -1,0 +1,11 @@
+# colcon / catkin build outputs
+build/
+install/
+log/
+devel/
+src/utils/pose_utils/build/
+
+# editor / python
+.vscode/
+__pycache__/
+*.pyc
