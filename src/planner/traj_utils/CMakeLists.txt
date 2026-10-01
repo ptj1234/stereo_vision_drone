@@ -1,59 +1,48 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.8)
 project(traj_utils)
 
-set(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_CXX_FLAGS "-std=c++11")
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
 
-find_package(catkin REQUIRED COMPONENTS
-  #bspline_opt
-  #path_searching
-  roscpp
-  std_msgs
-  geometry_msgs
-  message_generation
-  #cv_bridge
-)
-
+find_package(ament_cmake REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+find_package(builtin_interfaces REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
+find_package(rclcpp REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(PCL 1.7 REQUIRED)
 
-# Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  Bspline.msg
-  DataDisp.msg
-  MultiBsplines.msg
-  )
-  
-# Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-  geometry_msgs
+rosidl_generate_interfaces(${PROJECT_NAME}
+  msg/Bspline.msg
+  msg/DataDisp.msg
+  msg/MultiBsplines.msg
+  DEPENDENCIES builtin_interfaces std_msgs geometry_msgs
 )
 
-catkin_package(
- INCLUDE_DIRS include
- LIBRARIES traj_utils 
- CATKIN_DEPENDS message_runtime
-#  DEPENDS system_lib
+add_library(${PROJECT_NAME}_lib
+  src/planning_visualization.cpp
+  src/polynomial_traj.cpp
+)
+target_include_directories(${PROJECT_NAME}_lib PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+  ${EIGEN3_INCLUDE_DIRS}
+)
+ament_target_dependencies(${PROJECT_NAME}_lib rclcpp visualization_msgs geometry_msgs)
+rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} rosidl_typesupport_cpp)
+target_link_libraries(${PROJECT_NAME}_lib "${cpp_typesupport_target}")
+
+install(DIRECTORY include/ DESTINATION include)
+install(TARGETS ${PROJECT_NAME}_lib EXPORT export_${PROJECT_NAME}_lib
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
 )
 
-include_directories( 
-    SYSTEM 
-    include 
-    ${catkin_INCLUDE_DIRS}
-    ${Eigen3_INCLUDE_DIRS} 
-    ${PCL_INCLUDE_DIRS}
-)
-
-link_directories(${PCL_LIBRARY_DIRS})
-
-add_library( traj_utils
-    src/planning_visualization.cpp 
-    src/polynomial_traj.cpp 
-    )
-target_link_libraries( traj_utils
-    ${catkin_LIBRARIES} 
-    )  
+ament_export_targets(export_${PROJECT_NAME}_lib HAS_LIBRARY_TARGET)
+ament_export_dependencies(rosidl_default_runtime rclcpp visualization_msgs geometry_msgs Eigen3)
+ament_package()
