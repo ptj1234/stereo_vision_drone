@@ -1,18 +1,32 @@
 #ifndef __INPUT_H
 #define __INPUT_H
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <Eigen/Dense>
 
-#include <sensor_msgs/Imu.h>
-#include <quadrotor_msgs/PositionCommand.h>
-#include <quadrotor_msgs/TakeoffLand.h>
-#include <mavros_msgs/RCIn.h>
-#include <mavros_msgs/State.h>
-#include <mavros_msgs/ExtendedState.h>
-#include <sensor_msgs/BatteryState.h>
+#include <sensor_msgs/msg/imu.hpp>
+#include <quadrotor_msgs/msg/position_command.hpp>
+#include <quadrotor_msgs/msg/takeoff_land.hpp>
+#include <mavros_msgs/msg/rc_in.hpp>
+#include <mavros_msgs/msg/state.hpp>
+#include <mavros_msgs/msg/extended_state.hpp>
+#include <sensor_msgs/msg/battery_state.hpp>
 #include <uav_utils/utils.h>
 #include "PX4CtrlParam.h"
+
+// Single time source for px4ctrl (replaces ros::Time::now()).
+// main() points it at the node clock; every stamp it creates is RCL_ROS_TIME,
+// so subtracting any two px4ctrl times can never throw a clock-type mismatch.
+namespace px4ctrl_time
+{
+  inline rclcpp::Clock::SharedPtr &clock()
+  {
+    static rclcpp::Clock::SharedPtr c = std::make_shared<rclcpp::Clock>(RCL_ROS_TIME);
+    return c;
+  }
+  inline rclcpp::Time now() { return clock()->now(); }
+  inline rclcpp::Time zero() { return rclcpp::Time(0, 0, RCL_ROS_TIME); }
+}
 
 class RC_Data_t
 {
@@ -28,8 +42,8 @@ public:
   bool have_init_last_reboot_cmd{false};
   double ch[4];
 
-  mavros_msgs::RCIn msg;
-  ros::Time rcv_stamp;
+  mavros_msgs::msg::RCIn msg;
+  rclcpp::Time rcv_stamp{px4ctrl_time::zero()};
 
   bool is_command_mode;
   bool enter_command_mode;
@@ -45,8 +59,8 @@ public:
   RC_Data_t();
   void check_validity();
   bool check_centered();
-  void feed(mavros_msgs::RCInConstPtr pMsg);
-  bool is_received(const ros::Time &now_time);
+  void feed(mavros_msgs::msg::RCIn::ConstSharedPtr pMsg);
+  bool is_received(const rclcpp::Time &now_time);
 };
 
 class Odom_Data_t
@@ -58,12 +72,12 @@ public:
   Eigen::Quaterniond q;
   Eigen::Vector3d w;
 
-  nav_msgs::Odometry msg;
-  ros::Time rcv_stamp;
+  nav_msgs::msg::Odometry msg;
+  rclcpp::Time rcv_stamp{px4ctrl_time::zero()};
   bool recv_new_msg;
 
   Odom_Data_t();
-  void feed(nav_msgs::OdometryConstPtr pMsg);
+  void feed(nav_msgs::msg::Odometry::ConstSharedPtr pMsg);
 };
 
 class Imu_Data_t
@@ -73,30 +87,30 @@ public:
   Eigen::Vector3d w;
   Eigen::Vector3d a;
 
-  sensor_msgs::Imu msg;
-  ros::Time rcv_stamp;
+  sensor_msgs::msg::Imu msg;
+  rclcpp::Time rcv_stamp{px4ctrl_time::zero()};
 
   Imu_Data_t();
-  void feed(sensor_msgs::ImuConstPtr pMsg);
+  void feed(sensor_msgs::msg::Imu::ConstSharedPtr pMsg);
 };
 
 class State_Data_t
 {
 public:
-  mavros_msgs::State current_state;
-  mavros_msgs::State state_before_offboard;
+  mavros_msgs::msg::State current_state;
+  mavros_msgs::msg::State state_before_offboard;
 
   State_Data_t();
-  void feed(mavros_msgs::StateConstPtr pMsg);
+  void feed(mavros_msgs::msg::State::ConstSharedPtr pMsg);
 };
 
 class ExtendedState_Data_t
 {
 public:
-  mavros_msgs::ExtendedState current_extended_state;
+  mavros_msgs::msg::ExtendedState current_extended_state;
 
   ExtendedState_Data_t();
-  void feed(mavros_msgs::ExtendedStateConstPtr pMsg);
+  void feed(mavros_msgs::msg::ExtendedState::ConstSharedPtr pMsg);
 };
 
 class Command_Data_t
@@ -110,11 +124,11 @@ public:
   double yaw;
   double yaw_rate;
 
-  quadrotor_msgs::PositionCommand msg;
-  ros::Time rcv_stamp;
+  quadrotor_msgs::msg::PositionCommand msg;
+  rclcpp::Time rcv_stamp{px4ctrl_time::zero()};
 
   Command_Data_t();
-  void feed(quadrotor_msgs::PositionCommandConstPtr pMsg);
+  void feed(quadrotor_msgs::msg::PositionCommand::ConstSharedPtr pMsg);
 };
 
 class Battery_Data_t
@@ -124,11 +138,11 @@ public:
   double volt{0.0};
   double percentage{0.0};
 
-  sensor_msgs::BatteryState msg;
-  ros::Time rcv_stamp;
+  sensor_msgs::msg::BatteryState msg;
+  rclcpp::Time rcv_stamp{px4ctrl_time::zero()};
 
   Battery_Data_t();
-  void feed(sensor_msgs::BatteryStateConstPtr pMsg);
+  void feed(sensor_msgs::msg::BatteryState::ConstSharedPtr pMsg);
 };
 
 class Takeoff_Land_Data_t
@@ -138,11 +152,11 @@ public:
   bool triggered{false};
   uint8_t takeoff_land_cmd; // see TakeoffLand.msg for its defination
 
-  quadrotor_msgs::TakeoffLand msg;
-  ros::Time rcv_stamp;
+  quadrotor_msgs::msg::TakeoffLand msg;
+  rclcpp::Time rcv_stamp{px4ctrl_time::zero()};
 
   Takeoff_Land_Data_t();
-  void feed(quadrotor_msgs::TakeoffLandConstPtr pMsg);
+  void feed(quadrotor_msgs::msg::TakeoffLand::ConstSharedPtr pMsg);
 };
 
 #endif

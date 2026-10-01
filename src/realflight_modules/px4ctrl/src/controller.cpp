@@ -18,7 +18,7 @@ LinearControl::LinearControl(Parameter_t &param) : param_(param)
 /* 
   compute u.thrust and u.q, controller gains and other parameters are in param_ 
 */
-quadrotor_msgs::Px4ctrlDebug
+quadrotor_msgs::msg::Px4ctrlDebug
 LinearControl::calculateControl(const Desired_State_t &des,
     const Odom_Data_t &odom,
     const Imu_Data_t &imu, 
@@ -74,7 +74,7 @@ LinearControl::calculateControl(const Desired_State_t &des,
   debug_msg_.des_thr = u.thrust;
   
   // Used for thrust-accel mapping estimation
-  timed_thrust_.push(std::pair<ros::Time, double>(ros::Time::now(), u.thrust));
+  timed_thrust_.push(std::pair<rclcpp::Time, double>(px4ctrl_time::now(), u.thrust));
   while (timed_thrust_.size() > 100)
   {
     timed_thrust_.pop();
@@ -102,12 +102,12 @@ LinearControl::estimateThrustModel(
     const Eigen::Vector3d &est_a,
     const Parameter_t &param)
 {
-  ros::Time t_now = ros::Time::now();
+  rclcpp::Time t_now = px4ctrl_time::now();
   while (timed_thrust_.size() >= 1)
   {
     // Choose data before 35~45ms ago
-    std::pair<ros::Time, double> t_t = timed_thrust_.front();
-    double time_passed = (t_now - t_t.first).toSec();
+    std::pair<rclcpp::Time, double> t_t = timed_thrust_.front();
+    double time_passed = (t_now - t_t.first).seconds();
     if (time_passed > 0.045) // 45ms
     {
       // printf("continue, time_passed=%f\n", time_passed);

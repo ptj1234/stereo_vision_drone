@@ -5,8 +5,8 @@
 #ifndef __CONTROLLER_H
 #define __CONTROLLER_H
 
-#include <mavros_msgs/AttitudeTarget.h>
-#include <quadrotor_msgs/Px4ctrlDebug.h>
+#include <mavros_msgs/msg/attitude_target.hpp>
+#include <quadrotor_msgs/msg/px4ctrl_debug.hpp>
 #include <queue>
 
 #include "input.h"
@@ -54,7 +54,7 @@ class LinearControl
 {
 public:
   LinearControl(Parameter_t &);
-  quadrotor_msgs::Px4ctrlDebug calculateControl(const Desired_State_t &des,
+  quadrotor_msgs::msg::Px4ctrlDebug calculateControl(const Desired_State_t &des,
       const Odom_Data_t &odom,
       const Imu_Data_t &imu, 
       Controller_Output_t &u);
@@ -66,8 +66,8 @@ public:
 
 private:
   Parameter_t param_;
-  quadrotor_msgs::Px4ctrlDebug debug_msg_;
-  std::queue<std::pair<ros::Time, double>> timed_thrust_;
+  quadrotor_msgs::msg::Px4ctrlDebug debug_msg_;
+  std::queue<std::pair<rclcpp::Time, double>> timed_thrust_;
   static constexpr double kMinNormalizedCollectiveThrust_ = 3.0;
 
   // Thrust-accel mapping params

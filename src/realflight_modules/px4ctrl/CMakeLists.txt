@@ -1,49 +1,36 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.8)
 project(px4ctrl)
 
-set(CMAKE_VERBOSE_MAKEFILE "false")
-
-set(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_CXX_FLAGS "-std=c++11")
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
 
-find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  rospy
-  quadrotor_msgs
-  geometry_msgs
-  sensor_msgs
-  uav_utils
-  mavros
-)
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(quadrotor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(mavros_msgs REQUIRED)
+find_package(uav_utils REQUIRED)
+find_package(Eigen3 REQUIRED)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-find_package(Eigen3 REQUIRED) 
-
-catkin_package(
-)
-
-include_directories(
-  ${catkin_INCLUDE_DIRS}
-  ${EIGEN_INCLUDE_DIRS}
-  include/${PROJECT_NAME}
-  include
-)
-
-add_executable(px4ctrl_node 
+add_executable(px4ctrl_node
   src/px4ctrl_node.cpp
   src/PX4CtrlFSM.cpp
   src/PX4CtrlParam.cpp
   src/controller.cpp
   src/input.cpp
 )
-
-add_dependencies(px4ctrl_node quadrotor_msgs)
-
-target_link_libraries(px4ctrl_node
-  ${catkin_LIBRARIES}
+target_include_directories(px4ctrl_node PRIVATE ${EIGEN3_INCLUDE_DIRS})
+ament_target_dependencies(px4ctrl_node
+  rclcpp quadrotor_msgs geometry_msgs nav_msgs sensor_msgs mavros_msgs uav_utils
 )
 
-catkin_install_python(PROGRAMS thrust_calibrate_scrips/thrust_calibrate.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+install(TARGETS px4ctrl_node DESTINATION lib/${PROJECT_NAME})
+install(PROGRAMS thrust_calibrate_scrips/thrust_calibrate.py DESTINATION lib/${PROJECT_NAME})
+install(DIRECTORY launch config DESTINATION share/${PROJECT_NAME})
+
+ament_package()

@@ -1,20 +1,15 @@
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include "PX4CtrlFSM.h"
-#include <signal.h>
 
-void mySigintHandler(int sig)
-{
-    ROS_INFO("[PX4Ctrl] exit...");
-    ros::shutdown();
-}
+using std::placeholders::_1;
 
 int main(int argc, char *argv[])
 {
-    ros::init(argc, argv, "px4ctrl");
-    ros::NodeHandle nh("~");
+    rclcpp::init(argc, argv);
+    auto nh = std::make_shared<rclcpp::Node>("px4ctrl");
+    px4ctrl_time::clock() = nh->get_clock();
 
-    signal(SIGINT, mySigintHandler);
-    ros::Duration(1.0).sleep();
+    rclcpp::sleep_for(std::chrono::seconds(1));
 
     Parameter_t param;
     param.config_from_ros_handle(nh);
@@ -23,105 +18,116 @@ int main(int argc, char *argv[])
     LinearControl controller(param);
     PX4CtrlFSM fsm(param, controller);
 
-    ros::Subscriber state_sub =
-        nh.subscribe<mavros_msgs::State>("/mavros/state",
-                                         10,
-                                         boost::bind(&State_Data_t::feed, &fsm.state_data, _1));
+    // QoS: mavros publishes imu and battery best-effort (SensorDataQoS), so those subscriptions
+    // must be best-effort or they silently receive nothing. state/extended_state are reliable +
+    // transient_local and rc/in is reliable, which a reliable subscription matches.
+    // odom is best-effort so it matches any estimator publisher.
+    auto state_sub =
+        nh->create_subscription<mavros_msgs::msg::State>("/mavros/state",
+                                                         10,
+                                                         std::bind(&State_Data_t::feed, &fsm.state_data, _1));
 
-    ros::Subscriber extended_state_sub =
-        nh.subscribe<mavros_msgs::ExtendedState>("/mavros/extended_state",
-                                                 10,
-                                                 boost::bind(&ExtendedState_Data_t::feed, &fsm.extended_state_data, _1));
+    auto extended_state_sub =
+        nh->create_subscription<mavros_msgs::msg::ExtendedState>("/mavros/extended_state",
+                                                                 10,
+                                                                 std::bind(&ExtendedState_Data_t::feed, &fsm.extended_state_data, _1));
 
-    ros::Subscriber odom_sub =
-        nh.subscribe<nav_msgs::Odometry>("odom",
-                                         100,
-                                         boost::bind(&Odom_Data_t::feed, &fsm.odom_data, _1),
-                                         ros::VoidConstPtr(),
-                                         ros::TransportHints().tcpNoDelay());
+    auto odom_sub =
+        nh->create_subscription<nav_msgs::msg::Odometry>("~/odom",
+                                                         rclcpp::SensorDataQoS().keep_last(100),
+                                                         std::bind(&Odom_Data_t::feed, &fsm.odom_data, _1));
 
-    ros::Subscriber cmd_sub =
-        nh.subscribe<quadrotor_msgs::PositionCommand>("cmd",
-                                                      100,
-                                                      boost::bind(&Command_Data_t::feed, &fsm.cmd_data, _1),
-                                                      ros::VoidConstPtr(),
-                                                      ros::TransportHints().tcpNoDelay());
+    auto cmd_sub =
+        nh->create_subscription<quadrotor_msgs::msg::PositionCommand>("~/cmd",
+                                                                      100,
+                                                                      std::bind(&Command_Data_t::feed, &fsm.cmd_data, _1));
 
-    ros::Subscriber imu_sub =
-        nh.subscribe<sensor_msgs::Imu>("/mavros/imu/data", // Note: do NOT change it to /mavros/imu/data_raw !!!
-                                       100,
-                                       boost::bind(&Imu_Data_t::feed, &fsm.imu_data, _1),
-                                       ros::VoidConstPtr(),
-                                       ros::TransportHints().tcpNoDelay());
+    auto imu_sub =
+        nh->create_subscription<sensor_msgs::msg::Imu>("/mavros/imu/data", // Note: do NOT change it to /mavros/imu/data_raw !!!
+                                                       rclcpp::SensorDataQoS().keep_last(100),
+                                                       std::bind(&Imu_Data_t::feed, &fsm.imu_data, _1));
 
-    ros::Subscriber rc_sub;
+    rclcpp::Subscription<mavros_msgs::msg::RCIn>::SharedPtr rc_sub;
     if (!param.takeoff_land.no_RC) // mavros will still publish wrong rc messages although no RC is connected
     {
-        rc_sub = nh.subscribe<mavros_msgs::RCIn>("/mavros/rc/in",
-                                                 10,
-                                                 boost::bind(&RC_Data_t::feed, &fsm.rc_data, _1));
+        rc_sub = nh->create_subscription<mavros_msgs::msg::RCIn>("/mavros/rc/in",
+                                                                 10,
+                                                                 std::bind(&RC_Data_t::feed, &fsm.rc_data, _1));
     }
 
-    ros::Subscriber bat_sub =
-        nh.subscribe<sensor_msgs::BatteryState>("/mavros/battery",
-                                                100,
-                                                boost::bind(&Battery_Data_t::feed, &fsm.bat_data, _1),
-                                                ros::VoidConstPtr(),
-                                                ros::TransportHints().tcpNoDelay());
+    auto bat_sub =
+        nh->create_subscription<sensor_msgs::msg::BatteryState>("/mavros/battery",
+                                                                rclcpp::SensorDataQoS().keep_last(100),
+                                                                std::bind(&Battery_Data_t::feed, &fsm.bat_data, _1));
 
-    ros::Subscriber takeoff_land_sub =
-        nh.subscribe<quadrotor_msgs::TakeoffLand>("takeoff_land",
-                                                  100,
-                                                  boost::bind(&Takeoff_Land_Data_t::feed, &fsm.takeoff_land_data, _1),
-                                                  ros::VoidConstPtr(),
-                                                  ros::TransportHints().tcpNoDelay());
+    auto takeoff_land_sub =
+        nh->create_subscription<quadrotor_msgs::msg::TakeoffLand>("~/takeoff_land",
+                                                                  100,
+                                                                  std::bind(&Takeoff_Land_Data_t::feed, &fsm.takeoff_land_data, _1));
 
-    fsm.ctrl_FCU_pub = nh.advertise<mavros_msgs::AttitudeTarget>("/mavros/setpoint_raw/attitude", 10);
-    fsm.traj_start_trigger_pub = nh.advertise<geometry_msgs::PoseStamped>("/traj_start_trigger", 10);
+    fsm.ctrl_FCU_pub = nh->create_publisher<mavros_msgs::msg::AttitudeTarget>("/mavros/setpoint_raw/attitude", 10);
+    fsm.traj_start_trigger_pub = nh->create_publisher<geometry_msgs::msg::PoseStamped>("/traj_start_trigger", 10);
 
-    fsm.debug_pub = nh.advertise<quadrotor_msgs::Px4ctrlDebug>("/debugPx4ctrl", 10); // debug
+    fsm.debug_pub = nh->create_publisher<quadrotor_msgs::msg::Px4ctrlDebug>("/debugPx4ctrl", 10); // debug
 
-    fsm.set_FCU_mode_srv = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");
-    fsm.arming_client_srv = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");
-    fsm.reboot_FCU_srv = nh.serviceClient<mavros_msgs::CommandLong>("/mavros/cmd/command");
+    // Service clients live in a callback group that the main executor does not spin.
+    // fsm.srv_executor only serves this group, so a blocking service call waits for its
+    // response without running subscription callbacks in the middle of fsm.process().
+    auto srv_group = nh->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive, false);
+    fsm.set_FCU_mode_srv = nh->create_client<mavros_msgs::srv::SetMode>("/mavros/set_mode", rmw_qos_profile_services_default, srv_group);
+    fsm.arming_client_srv = nh->create_client<mavros_msgs::srv::CommandBool>("/mavros/cmd/arming", rmw_qos_profile_services_default, srv_group);
+    fsm.reboot_FCU_srv = nh->create_client<mavros_msgs::srv::CommandLong>("/mavros/cmd/command", rmw_qos_profile_services_default, srv_group);
+    fsm.srv_executor = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
+    fsm.srv_executor->add_callback_group(srv_group, nh->get_node_base_interface());
 
-    ros::Duration(0.5).sleep();
+    rclcpp::executors::SingleThreadedExecutor executor;
+    executor.add_node(nh);
+    // ROS 1 ros::spinOnce() runs every queued callback. ROS 2 spin_some() takes only one
+    // message per subscription, so with odom/imu faster than ctrl_freq_max the queues grow
+    // and the controller runs on stale data (measured ~1 s lag). spin_all() drains them.
+    auto spin_once = [&executor]()
+    { executor.spin_all(std::chrono::milliseconds(5)); };
+    fsm.spin_once = spin_once;
+
+    rclcpp::sleep_for(std::chrono::milliseconds(500));
 
     if (param.takeoff_land.no_RC)
     {
-        ROS_WARN("PX4CTRL] Remote controller disabled, be careful!");
+        RCLCPP_WARN(nh->get_logger(), "PX4CTRL] Remote controller disabled, be careful!");
     }
     else
     {
-        ROS_INFO("PX4CTRL] Waiting for RC");
-        while (ros::ok())
+        RCLCPP_INFO(nh->get_logger(), "PX4CTRL] Waiting for RC");
+        while (rclcpp::ok())
         {
-            ros::spinOnce();
-            if (fsm.rc_is_received(ros::Time::now()))
+            spin_once();
+            if (fsm.rc_is_received(px4ctrl_time::now()))
             {
-                ROS_INFO("[PX4CTRL] RC received.");
+                RCLCPP_INFO(nh->get_logger(), "[PX4CTRL] RC received.");
                 break;
             }
-            ros::Duration(0.1).sleep();
+            rclcpp::sleep_for(std::chrono::milliseconds(100));
         }
     }
 
     int trials = 0;
-    while (ros::ok() && !fsm.state_data.current_state.connected)
+    while (rclcpp::ok() && !fsm.state_data.current_state.connected)
     {
-        ros::spinOnce();
-        ros::Duration(1.0).sleep();
+        spin_once();
+        rclcpp::sleep_for(std::chrono::seconds(1));
         if (trials++ > 5)
-            ROS_ERROR("Unable to connnect to PX4!!!");
+            RCLCPP_ERROR(nh->get_logger(), "Unable to connnect to PX4!!!");
     }
 
-    ros::Rate r(param.ctrl_freq_max);
-    while (ros::ok())
+    rclcpp::WallRate r(param.ctrl_freq_max);
+    while (rclcpp::ok())
     {
         r.sleep();
-        ros::spinOnce();
+        spin_once();
         fsm.process(); // We DO NOT rely on feedback as trigger, since there is no significant performance difference through our test.
     }
 
+    RCLCPP_INFO(rclcpp::get_logger("px4ctrl"), "[PX4Ctrl] exit...");
+    rclcpp::shutdown();
     return 0;
 }

@@ -1,7 +1,9 @@
 #ifndef __PX4CTRLPARAM_H
 #define __PX4CTRLPARAM_H
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
+#include <cstdlib>
+#include <string>
 
 class Parameter_t
 {
@@ -76,21 +78,48 @@ public:
 	// bool print_dbg;
 
 	Parameter_t();
-	void config_from_ros_handle(const ros::NodeHandle &nh);
+	void config_from_ros_handle(const rclcpp::Node::SharedPtr &nh);
 	void config_full_thrust(double hov);
 
 private:
-	template <typename TName, typename TVal>
-	void read_essential_param(const ros::NodeHandle &nh, const TName &name, TVal &val)
+	// ROS 1 nh.getParam() + ROS_BREAK() equivalent: a missing parameter aborts the node.
+	// ROS 1 "a/b" names are ROS 2 "a.b" (nested YAML keys).
+	// An integer value given for a double parameter is accepted, as in ROS 1.
+	template <typename TVal>
+	void read_essential_param(const rclcpp::Node::SharedPtr &nh, std::string name, TVal &val)
 	{
-		if (nh.getParam(name, val))
+		for (auto &c : name)
+			if (c == '/')
+				c = '.';
+
+		if (!nh->has_parameter(name))
 		{
-			// pass
+			rcl_interfaces::msg::ParameterDescriptor desc;
+			desc.dynamic_typing = true;
+			nh->declare_parameter(name, rclcpp::ParameterValue(), desc);
 		}
-		else
+		rclcpp::Parameter p = nh->get_parameter(name);
+
+		bool ok = true;
+		try
 		{
-			ROS_ERROR_STREAM("Read param: " << name << " failed.");
-			ROS_BREAK();
+			if (p.get_type() == rclcpp::ParameterType::PARAMETER_NOT_SET)
+				ok = false;
+			else if constexpr (std::is_same_v<TVal, double>)
+				val = (p.get_type() == rclcpp::ParameterType::PARAMETER_INTEGER) ? static_cast<double>(p.as_int()) : p.as_double();
+			else
+				val = p.get_value<TVal>();
+		}
+		catch (const rclcpp::ParameterTypeException &e)
+		{
+			RCLCPP_ERROR_STREAM(nh->get_logger(), "Param " << name << " has a wrong type: " << e.what());
+			ok = false;
+		}
+
+		if (!ok)
+		{
+			RCLCPP_FATAL_STREAM(nh->get_logger(), "Read param: " << name << " failed.");
+			std::abort();
 		}
 	};
 };

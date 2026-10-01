@@ -4,7 +4,7 @@ Parameter_t::Parameter_t()
 {
 }
 
-void Parameter_t::config_from_ros_handle(const ros::NodeHandle &nh)
+void Parameter_t::config_from_ros_handle(const rclcpp::Node::SharedPtr &nh)
 {
 	read_essential_param(nh, "gain/Kp0", gain.Kp0);
 	read_essential_param(nh, "gain/Kp1", gain.Kp1);
@@ -63,17 +63,17 @@ void Parameter_t::config_from_ros_handle(const ros::NodeHandle &nh)
 	if ( takeoff_land.enable_auto_arm && !takeoff_land.enable )
 	{
 		takeoff_land.enable_auto_arm = false;
-		ROS_ERROR("\"enable_auto_arm\" is only allowd with \"auto_takeoff_land\" enabled.");
+		RCLCPP_ERROR(rclcpp::get_logger("px4ctrl"), "\"enable_auto_arm\" is only allowd with \"auto_takeoff_land\" enabled.");
 	}
 	if ( takeoff_land.no_RC && (!takeoff_land.enable_auto_arm || !takeoff_land.enable) )
 	{
 		takeoff_land.no_RC = false;
-		ROS_ERROR("\"no_RC\" is only allowd with both \"auto_takeoff_land\" and \"enable_auto_arm\" enabled.");
+		RCLCPP_ERROR(rclcpp::get_logger("px4ctrl"), "\"no_RC\" is only allowd with both \"auto_takeoff_land\" and \"enable_auto_arm\" enabled.");
 	}
 
 	if ( thr_map.print_val )
 	{
-		ROS_WARN("You should disable \"print_value\" if you are in regular usage.");
+		RCLCPP_WARN(rclcpp::get_logger("px4ctrl"), "You should disable \"print_value\" if you are in regular usage.");
 	}
 };
 

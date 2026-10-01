@@ -2,7 +2,7 @@
 
 RC_Data_t::RC_Data_t()
 {
-    rcv_stamp = ros::Time(0);
+    rcv_stamp = px4ctrl_time::zero();
 
     last_mode = -1.0;
     last_gear = -1.0;
@@ -19,10 +19,10 @@ RC_Data_t::RC_Data_t()
     }
 }
 
-void RC_Data_t::feed(mavros_msgs::RCInConstPtr pMsg)
+void RC_Data_t::feed(mavros_msgs::msg::RCIn::ConstSharedPtr pMsg)
 {
     msg = *pMsg;
-    rcv_stamp = ros::Time::now();
+    rcv_stamp = px4ctrl_time::now();
 
     for (int i = 0; i < 4; i++)
     {
@@ -106,7 +106,7 @@ void RC_Data_t::check_validity()
     }
     else
     {
-        ROS_ERROR("RC data validity check fail. mode=%f, gear=%f, reboot_cmd=%f", mode, gear, reboot_cmd);
+        RCLCPP_ERROR(rclcpp::get_logger("px4ctrl"), "RC data validity check fail. mode=%f, gear=%f, reboot_cmd=%f", mode, gear, reboot_cmd);
     }
 }
 
@@ -118,14 +118,14 @@ bool RC_Data_t::check_centered()
 
 Odom_Data_t::Odom_Data_t()
 {
-    rcv_stamp = ros::Time(0);
+    rcv_stamp = px4ctrl_time::zero();
     q.setIdentity();
     recv_new_msg = false;
 };
 
-void Odom_Data_t::feed(nav_msgs::OdometryConstPtr pMsg)
+void Odom_Data_t::feed(nav_msgs::msg::Odometry::ConstSharedPtr pMsg)
 {
-    ros::Time now = ros::Time::now();
+    rclcpp::Time now = px4ctrl_time::now();
 
     msg = *pMsg;
     rcv_stamp = now;
@@ -141,17 +141,17 @@ void Odom_Data_t::feed(nav_msgs::OdometryConstPtr pMsg)
 
     static int count = 0;
     if (count++ % 500 == 0)
-        ROS_WARN("VEL_IN_BODY!!!");
+        RCLCPP_WARN(rclcpp::get_logger("px4ctrl"), "VEL_IN_BODY!!!");
 #endif
 
     // check the frequency
     static int one_min_count = 9999;
-    static ros::Time last_clear_count_time = ros::Time(0.0);
-    if ( (now - last_clear_count_time).toSec() > 1.0 )
+    static rclcpp::Time last_clear_count_time = px4ctrl_time::zero();
+    if ( (now - last_clear_count_time).seconds() > 1.0 )
     {
         if ( one_min_count < 100 )
         {
-            ROS_WARN("ODOM frequency seems lower than 100Hz, which is too low!");
+            RCLCPP_WARN(rclcpp::get_logger("px4ctrl"), "ODOM frequency seems lower than 100Hz, which is too low!");
         }
         one_min_count = 0;
         last_clear_count_time = now;
@@ -161,12 +161,12 @@ void Odom_Data_t::feed(nav_msgs::OdometryConstPtr pMsg)
 
 Imu_Data_t::Imu_Data_t()
 {
-    rcv_stamp = ros::Time(0);
+    rcv_stamp = px4ctrl_time::zero();
 }
 
-void Imu_Data_t::feed(sensor_msgs::ImuConstPtr pMsg)
+void Imu_Data_t::feed(sensor_msgs::msg::Imu::ConstSharedPtr pMsg)
 {
-    ros::Time now = ros::Time::now();
+    rclcpp::Time now = px4ctrl_time::now();
 
     msg = *pMsg;
     rcv_stamp = now;
@@ -186,12 +186,12 @@ void Imu_Data_t::feed(sensor_msgs::ImuConstPtr pMsg)
 
     // check the frequency
     static int one_min_count = 9999;
-    static ros::Time last_clear_count_time = ros::Time(0.0);
-    if ( (now - last_clear_count_time).toSec() > 1.0 )
+    static rclcpp::Time last_clear_count_time = px4ctrl_time::zero();
+    if ( (now - last_clear_count_time).seconds() > 1.0 )
     {
         if ( one_min_count < 100 )
         {
-            ROS_WARN("IMU frequency seems lower than 100Hz, which is too low!");
+            RCLCPP_WARN(rclcpp::get_logger("px4ctrl"), "IMU frequency seems lower than 100Hz, which is too low!");
         }
         one_min_count = 0;
         last_clear_count_time = now;
@@ -203,7 +203,7 @@ State_Data_t::State_Data_t()
 {
 }
 
-void State_Data_t::feed(mavros_msgs::StateConstPtr pMsg)
+void State_Data_t::feed(mavros_msgs::msg::State::ConstSharedPtr pMsg)
 {
 
     current_state = *pMsg;
@@ -213,21 +213,21 @@ ExtendedState_Data_t::ExtendedState_Data_t()
 {
 }
 
-void ExtendedState_Data_t::feed(mavros_msgs::ExtendedStateConstPtr pMsg)
+void ExtendedState_Data_t::feed(mavros_msgs::msg::ExtendedState::ConstSharedPtr pMsg)
 {
     current_extended_state = *pMsg;
 }
 
 Command_Data_t::Command_Data_t()
 {
-    rcv_stamp = ros::Time(0);
+    rcv_stamp = px4ctrl_time::zero();
 }
 
-void Command_Data_t::feed(quadrotor_msgs::PositionCommandConstPtr pMsg)
+void Command_Data_t::feed(quadrotor_msgs::msg::PositionCommand::ConstSharedPtr pMsg)
 {
 
     msg = *pMsg;
-    rcv_stamp = ros::Time::now();
+    rcv_stamp = px4ctrl_time::now();
 
     p(0) = msg.position.x;
     p(1) = msg.position.y;
@@ -253,14 +253,14 @@ void Command_Data_t::feed(quadrotor_msgs::PositionCommandConstPtr pMsg)
 
 Battery_Data_t::Battery_Data_t()
 {
-    rcv_stamp = ros::Time(0);
+    rcv_stamp = px4ctrl_time::zero();
 }
 
-void Battery_Data_t::feed(sensor_msgs::BatteryStateConstPtr pMsg)
+void Battery_Data_t::feed(sensor_msgs::msg::BatteryState::ConstSharedPtr pMsg)
 {
 
     msg = *pMsg;
-    rcv_stamp = ros::Time::now();
+    rcv_stamp = px4ctrl_time::now();
 
     double voltage = 0;
     for (size_t i = 0; i < pMsg->cell_voltage.size(); ++i)
@@ -272,20 +272,20 @@ void Battery_Data_t::feed(sensor_msgs::BatteryStateConstPtr pMsg)
     // volt = 0.8 * volt + 0.2 * pMsg->voltage; // Naive LPF
     percentage = pMsg->percentage;
 
-    static ros::Time last_print_t = ros::Time(0);
+    static rclcpp::Time last_print_t = px4ctrl_time::zero();
     if (percentage > 0.05)
     {
-        if ((rcv_stamp - last_print_t).toSec() > 10)
+        if ((rcv_stamp - last_print_t).seconds() > 10)
         {
-            ROS_INFO("[px4ctrl] Voltage=%.3f, percentage=%.3f", volt, percentage);
+            RCLCPP_INFO(rclcpp::get_logger("px4ctrl"), "[px4ctrl] Voltage=%.3f, percentage=%.3f", volt, percentage);
             last_print_t = rcv_stamp;
         }
     }
     else
     {
-        if ((rcv_stamp - last_print_t).toSec() > 1)
+        if ((rcv_stamp - last_print_t).seconds() > 1)
         {
-            // ROS_ERROR("[px4ctrl] Dangerous! voltage=%.3f, percentage=%.3f", volt, percentage);
+            // RCLCPP_ERROR(rclcpp::get_logger("px4ctrl"), "[px4ctrl] Dangerous! voltage=%.3f, percentage=%.3f", volt, percentage);
             last_print_t = rcv_stamp;
         }
     }
@@ -293,14 +293,14 @@ void Battery_Data_t::feed(sensor_msgs::BatteryStateConstPtr pMsg)
 
 Takeoff_Land_Data_t::Takeoff_Land_Data_t()
 {
-    rcv_stamp = ros::Time(0);
+    rcv_stamp = px4ctrl_time::zero();
 }
 
-void Takeoff_Land_Data_t::feed(quadrotor_msgs::TakeoffLandConstPtr pMsg)
+void Takeoff_Land_Data_t::feed(quadrotor_msgs::msg::TakeoffLand::ConstSharedPtr pMsg)
 {
 
     msg = *pMsg;
-    rcv_stamp = ros::Time::now();
+    rcv_stamp = px4ctrl_time::now();
 
     triggered = true;
     takeoff_land_cmd = pMsg->takeoff_land_cmd;
