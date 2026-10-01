@@ -180,13 +180,13 @@ Operating aerial robots is risky! Please strictly abide by the safety regulation
   
   * Create a `vins_output` folder in the home directory
   
-  * Modify in `vision_drone.yaml`, for `body_T_cam0` and `body_T_cam1`, `data` 's fourth column to the actual extrinsic parameters of the camera on your drone relative to the flight control，in meters. The order is x/y/z, the fourth item is 1, no need to change
+  * Modify in `stereo_vision_drone.yaml`, for `body_T_cam0` and `body_T_cam1`, `data` 's fourth column to the actual extrinsic parameters of the camera on your drone relative to the flight control，in meters. The order is x/y/z, the fourth item is 1, no need to change
   
 * Accurate self-calibration of VINS external parameters  
   * `sh shfiles/rspx4.sh`
   * `rostopic echo /vins_fusion/imu_propagate`
   * Pick up the robot and walk <font color="#dd0000">slowly</font>in the field. The lighting in the venue should not change too much.<font color="#dd0000">Do not use light sources that flicker</font>. Put as many clutter as possible to increase the feature points that VINS uses for matching
-  * Replace the content in `vins_output/extrinsic_parameter.txt` to `body_T_cam0` and `body_T_cam1` of `vision_drone.yaml`
+  * Replace the content in `vins_output/extrinsic_parameter.txt` to `body_T_cam0` and `body_T_cam1` of `stereo_vision_drone.yaml`
   * Repeat the above operation until the odometer data deviation of VINS converges to a satisfactory value after a few laps (usually within 0.3 meters)
 * Test of mapping
   * `sh shfiles/rspx4.sh`
