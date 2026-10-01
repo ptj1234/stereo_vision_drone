@@ -16,19 +16,19 @@
   <arg name="odom_topic"/>
 
   <!-- number of moving objects -->
-  <arg name="obj_num" value="10" />
+  <arg name="obj_num" default="10" />
 
   <!-- main algorithm params -->
-  <include file="$(find ego_planner)/launch/advanced_param.xml">
+  <include file="$(find-pkg-share ego_planner)/launch/advanced_param.xml">
 
-    <arg name="drone_id" value="$(arg drone_id)"/>
+    <arg name="drone_id" value="$(var drone_id)"/>
 
-    <arg name="map_size_x_" value="$(arg map_size_x)"/>
-    <arg name="map_size_y_" value="$(arg map_size_y)"/>
-    <arg name="map_size_z_" value="$(arg map_size_z)"/>
-    <arg name="odometry_topic" value="$(arg odom_topic)"/>
+    <arg name="map_size_x_" value="$(var map_size_x)"/>
+    <arg name="map_size_y_" value="$(var map_size_y)"/>
+    <arg name="map_size_z_" value="$(var map_size_z)"/>
+    <arg name="odometry_topic" value="$(var odom_topic)"/>
 
-    <arg name="obj_num_set" value="$(arg obj_num)" />
+    <arg name="obj_num_set" value="$(var obj_num)" />
 
     <!-- camera pose: transform of camera frame in the world frame -->
     <!-- depth topic: depth image, 640x480 by default -->
@@ -63,9 +63,9 @@
     <!-- It generates a piecewise min-snap traj passing all waypoints -->
     <arg name="point_num" value="1" />
 
-    <arg name="point0_x" value="$(arg target_x)" />
-    <arg name="point0_y" value="$(arg target_y)" />
-    <arg name="point0_z" value="$(arg target_z)" />
+    <arg name="point0_x" value="$(var target_x)" />
+    <arg name="point0_y" value="$(var target_y)" />
+    <arg name="point0_z" value="$(var target_z)" />
 
     <arg name="point1_x" value="0.0" />
     <arg name="point1_y" value="15.0" />
@@ -88,50 +88,50 @@
 
 
   <!-- trajectory server -->
-  <node pkg="ego_planner" name="drone_$(arg drone_id)_traj_server" type="traj_server" output="screen">
-    <remap from="position_cmd" to="drone_$(arg drone_id)_planning/pos_cmd"/>
-    <remap from="~planning/bspline" to="drone_$(arg drone_id)_planning/bspline"/>
+  <node pkg="ego_planner" name="drone_$(var drone_id)_traj_server" exec="traj_server" output="screen">
+    <remap from="position_cmd" to="drone_$(var drone_id)_planning/pos_cmd"/>
+    <remap from="~/planning/bspline" to="drone_$(var drone_id)_planning/bspline"/>
 
-    <param name="traj_server/time_forward" value="1.0" type="double"/>
+    <param name="traj_server.time_forward" value="1.0"/>
   </node>
 
   <!--node pkg="waypoint_generator" name="waypoint_generator" type="waypoint_generator" output="screen">
-    <remap from="~odom" to="$(arg odom_topic)"/>        
-    <remap from="~goal" to="/move_base_simple/goal"/>
-    <remap from="~traj_start_trigger" to="/traj_start_trigger" />
+    <remap from="~/odom" to="$(var odom_topic)"/>        
+    <remap from="~/goal" to="/move_base_simple/goal"/>
+    <remap from="~/traj_start_trigger" to="/traj_start_trigger" />
     <param name="waypoint_type" value="manual-lonely-waypoint"/>    
   </node-->
 
   <!-- use simulator -->
-  <include file="$(find ego_planner)/launch/simulator.xml">
+  <include file="$(find-pkg-share ego_planner)/launch/simulator.xml">
 
-    <arg name="drone_id" value="$(arg drone_id)"/>
+    <arg name="drone_id" value="$(var drone_id)"/>
 
-    <arg name="map_size_x_" value="$(arg map_size_x)"/>
-    <arg name="map_size_y_" value="$(arg map_size_y)"/>
-    <arg name="map_size_z_" value="$(arg map_size_z)"/>
+    <arg name="map_size_x_" value="$(var map_size_x)"/>
+    <arg name="map_size_y_" value="$(var map_size_y)"/>
+    <arg name="map_size_z_" value="$(var map_size_z)"/>
 
-    <arg name="init_x_" value="$(arg init_x)"/>
-    <arg name="init_y_" value="$(arg init_y)"/>
-    <arg name="init_z_" value="$(arg init_z)"/>
+    <arg name="init_x_" value="$(var init_x)"/>
+    <arg name="init_y_" value="$(var init_y)"/>
+    <arg name="init_z_" value="$(var init_z)"/>
 
-    <arg name="odometry_topic" value="$(arg odom_topic)" />
+    <arg name="odometry_topic" value="$(var odom_topic)" />
   </include>
 
   <![CDATA[node pkg="plan_env" name="obj_generator" type="obj_generator" output="screen">
-    <param name="obj_generator/obj_num" value="$(arg obj_num)"/>    
-    <param name="obj_generator/x_size" value="12.0"/>  
-    <param name="obj_generator/y_size" value="12.0"/>  
-    <param name="obj_generator/h_size" value="1.0"/>   
-    <param name="obj_generator/vel" value="1.5"/>   
-    <param name="obj_generator/yaw_dot" value="2.0"/>   
-    <param name="obj_generator/acc_r1" value="1.0"/>   
-    <param name="obj_generator/acc_r2" value="1.0"/>   
-    <param name="obj_generator/acc_z" value="0.0"/>   
-    <param name="obj_generator/scale1" value="0.5"/>   
-    <param name="obj_generator/scale2" value="1.0"/>   
-    <param name="obj_generator/interval" value="100.0"/>    
-    <param name="obj_generator/input_type" value="1"/> <!-- 1: Vel input, 2: Acc input-->>   
+    <param name="obj_generator.obj_num" value="$(var obj_num)"/>    
+    <param name="obj_generator.x_size" value="12.0"/>  
+    <param name="obj_generator.y_size" value="12.0"/>  
+    <param name="obj_generator.h_size" value="1.0"/>   
+    <param name="obj_generator.vel" value="1.5"/>   
+    <param name="obj_generator.yaw_dot" value="2.0"/>   
+    <param name="obj_generator.acc_r1" value="1.0"/>   
+    <param name="obj_generator.acc_r2" value="1.0"/>   
+    <param name="obj_generator.acc_z" value="0.0"/>   
+    <param name="obj_generator.scale1" value="0.5"/>   
+    <param name="obj_generator.scale2" value="1.0"/>   
+    <param name="obj_generator.interval" value="100.0"/>    
+    <param name="obj_generator.input_type" value="1"/> <!-- 1: Vel input, 2: Acc input-->>   
   </node]]>
 
 </launch>

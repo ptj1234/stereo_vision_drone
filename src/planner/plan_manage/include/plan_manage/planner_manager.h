@@ -5,11 +5,11 @@
 
 #include <bspline_opt/bspline_optimizer.h>
 #include <bspline_opt/uniform_bspline.h>
-#include <traj_utils/DataDisp.h>
+#include <traj_utils/msg/data_disp.hpp>
 #include <plan_env/grid_map.h>
 #include <plan_env/obj_predictor.h>
 #include <traj_utils/plan_container.hpp>
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <traj_utils/planning_visualization.h>
 
 namespace ego_planner
@@ -36,7 +36,7 @@ namespace ego_planner
     bool planGlobalTrajWaypoints(const Eigen::Vector3d &start_pos, const Eigen::Vector3d &start_vel, const Eigen::Vector3d &start_acc,
                                  const std::vector<Eigen::Vector3d> &waypoints, const Eigen::Vector3d &end_vel, const Eigen::Vector3d &end_acc);
 
-    void initPlanModules(ros::NodeHandle &nh, PlanningVisualization::Ptr vis = NULL);
+    void initPlanModules(const rclcpp::Node::SharedPtr &nh, PlanningVisualization::Ptr vis = NULL);
 
     void deliverTrajToOptimizer(void) { bspline_optimizer_->setSwarmTrajs(&swarm_trajs_buf_); };
 
@@ -57,6 +57,7 @@ namespace ego_planner
   private:
     /* main planning algorithms & modules */
     PlanningVisualization::Ptr visualization_;
+    rclcpp::Node::SharedPtr node_;
 
     // ros::Publisher obj_pub_; //zx-todo 
 
@@ -64,7 +65,7 @@ namespace ego_planner
 
     int continous_failures_count_{0};
 
-    void updateTrajInfo(const UniformBspline &position_traj, const ros::Time time_now);
+    void updateTrajInfo(const UniformBspline &position_traj, const rclcpp::Time time_now);
 
     void reparamBspline(UniformBspline &bspline, vector<Eigen::Vector3d> &start_end_derivative, double ratio, Eigen::MatrixXd &ctrl_pts, double &dt,
                         double &time_inc);

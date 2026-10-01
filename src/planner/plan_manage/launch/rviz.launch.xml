@@ -1,0 +1,3 @@
+<launch>
+  <node name="rviz" pkg="rviz2" exec="rviz2" args="-d $(find-pkg-share ego_planner)/launch/default.rviz" on_exit="shutdown" />
+</launch>

@@ -154,7 +154,7 @@ void LinearObjModel::update(double dt) {
       // if ( pos_(1) > bound_(1) || pos_(1) < -bound_(1) ) acc_(1) = -acc_(1);
       // if ( pos_(2) > bound_(2) || pos_(2) < -bound_(2) ) acc_(2) = -acc_(2);
       acc_ = -acc_;
-      //ROS_ERROR("AAAAAAAAAAAAAAAAAAa");
+      //RCLCPP_ERROR(rclcpp::get_logger("plan_env"), "AAAAAAAAAAAAAAAAAAa");
     }
   }
   // for (int i = 0; i < 2; ++i)

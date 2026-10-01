@@ -28,11 +28,11 @@
 
 #include <Eigen/Eigen>
 #include <algorithm>
-#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/msg/pose_stamped.hpp>
 #include <iostream>
 #include <list>
-#include <ros/ros.h>
-#include <visualization_msgs/Marker.h>
+#include <rclcpp/rclcpp.hpp>
+#include <visualization_msgs/msg/marker.hpp>
 
 using std::cout;
 using std::endl;
@@ -51,7 +51,7 @@ class PolynomialPrediction {
 private:
   vector<Eigen::Matrix<double, 6, 1>> polys;
   double t1, t2;  // start / end
-  ros::Time global_start_time_;
+  rclcpp::Time global_start_time_{0, 0, RCL_ROS_TIME};
 
 public:
   PolynomialPrediction(/* args */) {
@@ -66,7 +66,7 @@ public:
     this->t1 = t1;
     this->t2 = t2;
   }
-  void setGlobalStartTime(ros::Time global_start_time) {
+  void setGlobalStartTime(rclcpp::Time global_start_time) {
     global_start_time_ = global_start_time;
   }
 
@@ -87,9 +87,9 @@ public:
 
   Eigen::Vector3d evaluateConstVel(double t) {
     Eigen::Matrix<double, 2, 1> tv;
-    tv << 1.0, pow(t-global_start_time_.toSec(), 1);
+    tv << 1.0, pow(t-global_start_time_.seconds(), 1);
 
-    // cout << t-global_start_time_.toSec() << endl;
+    // cout << t-global_start_time_.seconds() << endl;
 
     Eigen::Vector3d pt;
     pt(0) = tv.dot(polys[0].head(2)), pt(1) = tv.dot(polys[1].head(2)), pt(2) = tv.dot(polys[2].head(2));
@@ -103,16 +103,17 @@ class ObjHistory {
 public:
   int skip_num_;
   int queue_size_;
-  ros::Time global_start_time_;
+  rclcpp::Time global_start_time_{0, 0, RCL_ROS_TIME};
+  rclcpp::Clock::SharedPtr clock_;
 
   ObjHistory() {
   }
   ~ObjHistory() {
   }
 
-  void init(int id, int skip_num, int queue_size, ros::Time global_start_time);
+  void init(int id, int skip_num, int queue_size, rclcpp::Time global_start_time, rclcpp::Clock::SharedPtr clock);
 
-  void poseCallback(const geometry_msgs::PoseStampedConstPtr& msg);
+  void poseCallback(const geometry_msgs::msg::PoseStamped::ConstSharedPtr& msg);
 
   void clear() {
     history_.clear();
@@ -132,15 +133,15 @@ private:
 /* ========== predict future trajectory using history ========== */
 class ObjPredictor {
 private:
-  ros::NodeHandle node_handle_;
+  rclcpp::Node::SharedPtr node_handle_;
 
   int obj_num_;
   double lambda_;
   double predict_rate_;
 
-  vector<ros::Subscriber> pose_subs_;
-  ros::Subscriber marker_sub_;
-  ros::Timer predict_timer_;
+  vector<rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr> pose_subs_;
+  rclcpp::Subscription<visualization_msgs::msg::Marker>::SharedPtr marker_sub_;
+  rclcpp::TimerBase::SharedPtr predict_timer_;
   vector<shared_ptr<ObjHistory>> obj_histories_;
 
   /* share data with planner */
@@ -148,15 +149,15 @@ private:
   ObjScale obj_scale_;
   vector<bool> scale_init_;
 
-  void markerCallback(const visualization_msgs::MarkerConstPtr& msg);
+  void markerCallback(const visualization_msgs::msg::Marker::ConstSharedPtr& msg);
 
-  void predictCallback(const ros::TimerEvent& e);
+  void predictCallback();
   void predictPolyFit();
   void predictConstVel();
 
 public:
   ObjPredictor(/* args */);
-  ObjPredictor(ros::NodeHandle& node);
+  ObjPredictor(const rclcpp::Node::SharedPtr& node);
   ~ObjPredictor();
 
   void init();

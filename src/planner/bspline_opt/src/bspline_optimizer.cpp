@@ -1,23 +1,27 @@
 #include "bspline_opt/bspline_optimizer.h"
 #include "bspline_opt/gradient_descent_optimizer.h"
+#include <plan_env/param_helper.hpp>
+#include <chrono>
 // using namespace std;
 
 namespace ego_planner
 {
 
-  void BsplineOptimizer::setParam(ros::NodeHandle &nh)
+  void BsplineOptimizer::setParam(const rclcpp::Node::SharedPtr &nh)
   {
-    nh.param("optimization/lambda_smooth", lambda1_, -1.0);
-    nh.param("optimization/lambda_collision", lambda2_, -1.0);
-    nh.param("optimization/lambda_feasibility", lambda3_, -1.0);
-    nh.param("optimization/lambda_fitness", lambda4_, -1.0);
+    clock_ = nh->get_clock();
 
-    nh.param("optimization/dist0", dist0_, -1.0);
-    nh.param("optimization/swarm_clearance", swarm_clearance_, -1.0);
-    nh.param("optimization/max_vel", max_vel_, -1.0);
-    nh.param("optimization/max_acc", max_acc_, -1.0);
+    param_helper::param(nh, "optimization/lambda_smooth", lambda1_, -1.0);
+    param_helper::param(nh, "optimization/lambda_collision", lambda2_, -1.0);
+    param_helper::param(nh, "optimization/lambda_feasibility", lambda3_, -1.0);
+    param_helper::param(nh, "optimization/lambda_fitness", lambda4_, -1.0);
 
-    nh.param("optimization/order", order_, 3);
+    param_helper::param(nh, "optimization/dist0", dist0_, -1.0);
+    param_helper::param(nh, "optimization/swarm_clearance", swarm_clearance_, -1.0);
+    param_helper::param(nh, "optimization/max_vel", max_vel_, -1.0);
+    param_helper::param(nh, "optimization/max_acc", max_acc_, -1.0);
+
+    param_helper::param(nh, "optimization/order", order_, 3);
   }
 
   void BsplineOptimizer::setEnvironment(const GridMap::Ptr &map)
@@ -133,7 +137,7 @@ namespace ego_planner
         if (occ_start_id == -1 || occ_end_id == -1)
         {
           // It means that the first or the last control points of one segment are in obstacles, which is not allowed.
-          // ROS_WARN("What? occ_start_id=%d, occ_end_id=%d", occ_start_id, occ_end_id);
+          // RCLCPP_WARN(rclcpp::get_logger("bspline_opt"), "What? occ_start_id=%d, occ_end_id=%d", occ_start_id, occ_end_id);
 
           segments.erase(segments.begin() + i);
           RichInfoSegs.erase(RichInfoSegs.begin() + i);
@@ -163,7 +167,7 @@ namespace ego_planner
           if (RichInfoSegs[i].first.base_point[j].size() != 1)
           {
             cout << "RichInfoSegs[" << i << "].first.base_point[" << j << "].size()=" << RichInfoSegs[i].first.base_point[j].size() << endl;
-            ROS_ERROR("Wrong number of base_points!!! Should not be happen!.");
+            RCLCPP_ERROR(rclcpp::get_logger("bspline_opt"), "Wrong number of base_points!!! Should not be happen!.");
 
             cout << setprecision(5);
             cout << "cps_" << endl;
@@ -172,7 +176,7 @@ namespace ego_planner
             {
               if (cps_.base_point[temp_i].size() > 1 && cps_.base_point[temp_i].size() < 1000)
               {
-                ROS_ERROR("Should not happen!!!");
+                RCLCPP_ERROR(rclcpp::get_logger("bspline_opt"), "Should not happen!!!");
                 cout << "######" << cps_.points.col(temp_i).transpose() << endl;
                 for (size_t temp_j = 0; temp_j < cps_.base_point[temp_i].size(); temp_j++)
                   cout << "      " << cps_.base_point[temp_i][temp_j].transpose() << " @ " << cps_.direction[temp_i][temp_j].transpose() << endl;
@@ -216,7 +220,7 @@ namespace ego_planner
             }
             if (l > l_upbound)
             {
-              ROS_WARN("Can't find the new base points at the opposite within the threshold. i=%d, j=%d", i, j);
+              RCLCPP_WARN(rclcpp::get_logger("bspline_opt"), "Can't find the new base points at the opposite within the threshold. i=%d, j=%d", i, j);
 
               segments.erase(segments.begin() + i);
               RichInfoSegs.erase(RichInfoSegs.begin() + i);
@@ -233,7 +237,7 @@ namespace ego_planner
           }
           else
           {
-            ROS_WARN("base_point and control point are too close!");
+            RCLCPP_WARN(rclcpp::get_logger("bspline_opt"), "base_point and control point are too close!");
             cout << "base_point=" << RichInfoSegs[i].first.base_point[j][0].transpose() << " control point=" << RichInfoSegs[i].first.points.col(j).transpose() << endl;
 
             segments.erase(segments.begin() + i);
@@ -291,7 +295,7 @@ namespace ego_planner
           }
           if (l > l_upbound)
           {
-            ROS_WARN("Can't find the new base points at the opposite within the threshold, 2. i=%d", i);
+            RCLCPP_WARN(rclcpp::get_logger("bspline_opt"), "Can't find the new base points at the opposite within the threshold, 2. i=%d", i);
 
             segments.erase(segments.begin() + i);
             RichInfoSegs.erase(RichInfoSegs.begin() + i);
@@ -306,7 +310,7 @@ namespace ego_planner
         }
         else
         {
-          ROS_WARN("base_point and control point are too close!, 2");
+          RCLCPP_WARN(rclcpp::get_logger("bspline_opt"), "base_point and control point are too close!, 2");
           cout << "base_point=" << RichInfoSegs[i].first.base_point[0][0].transpose() << " control point=" << RichInfoSegs[i].first.points.col(0).transpose() << endl;
 
           segments.erase(segments.begin() + i);
@@ -348,7 +352,7 @@ namespace ego_planner
         digit_id++;
         if (digit_id >= seg_upbound)
         {
-          ROS_ERROR("Should not happen!!! digit_id=%d, seg_upbound=%d", digit_id, seg_upbound);
+          RCLCPP_ERROR(rclcpp::get_logger("bspline_opt"), "Should not happen!!! digit_id=%d, seg_upbound=%d", digit_id, seg_upbound);
         }
         selection[digit_id]++;
       }
@@ -413,7 +417,7 @@ namespace ego_planner
         }
         else
         {
-          ROS_ERROR("Shold not happen!!!!, cp_id=%d, seg_id=%d, segments.front().first=%d, segments.back().second=%d, segments[seg_id].first=%d, segments[seg_id].second=%d",
+          RCLCPP_ERROR(rclcpp::get_logger("bspline_opt"), "Shold not happen!!!!, cp_id=%d, seg_id=%d, segments.front().first=%d, segments.back().second=%d, segments[seg_id].first=%d, segments[seg_id].second=%d",
                     cp_id, seg_id, segments.front().first, segments.back().second, segments[seg_id].first, segments[seg_id].second);
         }
 
@@ -523,7 +527,7 @@ namespace ego_planner
       }
       else
       {
-        ROS_ERROR("a star error, force return!");
+        RCLCPP_ERROR(rclcpp::get_logger("bspline_opt"), "a star error, force return!");
         vector<std::pair<int, int>> blank_ret;
         return blank_ret;
       }
@@ -736,7 +740,7 @@ namespace ego_planner
       else
       {
         // Just ignore, it does not matter ^_^.
-        // ROS_ERROR("Failed to generate direction! segment_id=%d", i);
+        // RCLCPP_ERROR(rclcpp::get_logger("bspline_opt"), "Failed to generate direction! segment_id=%d", i);
       }
     }
 
@@ -778,7 +782,7 @@ namespace ego_planner
     cost = 0.0;
     int end_idx = q.cols() - order_ - (double)(q.cols() - 2 * order_) * 1.0 / 3.0; // Only check the first 2/3 points
     const double CLEARANCE = swarm_clearance_ * 2;
-    double t_now = ros::Time::now().toSec();
+    double t_now = clock_->now().seconds();
     constexpr double a = 2.0, b = 1.0, inv_a2 = 1 / a / a, inv_b2 = 1 / b / b;
 
     for (int i = order_; i < end_idx; i++)
@@ -792,7 +796,7 @@ namespace ego_planner
           continue;
         }
 
-        double traj_i_satrt_time = swarm_trajs_->at(id).start_time_.toSec();
+        double traj_i_satrt_time = swarm_trajs_->at(id).start_time_.seconds();
         if (glb_time < traj_i_satrt_time + swarm_trajs_->at(id).duration_ - 0.1)
         {
           /* def cost=(c-sqrt([Q-O]'D[Q-O]))^2, D=[1/b^2,0,0;0,1/b^2,0;0,0,1/a^2] */
@@ -831,7 +835,7 @@ namespace ego_planner
     cost = 0.0;
     int end_idx = q.cols() - order_;
     constexpr double CLEARANCE = 1.5;
-    double t_now = ros::Time::now().toSec();
+    double t_now = clock_->now().seconds();
 
     for (int i = order_; i < end_idx; i++)
     {
@@ -1240,7 +1244,7 @@ namespace ego_planner
         }
         if (j < 0) // fail to get the obs free point
         {
-          ROS_ERROR("ERROR! the drone is in obstacle. This should not happen.");
+          RCLCPP_ERROR(rclcpp::get_logger("bspline_opt"), "ERROR! the drone is in obstacle. This should not happen.");
           in_id = 0;
         }
 
@@ -1256,7 +1260,7 @@ namespace ego_planner
         }
         if (j >= cps_.size) // fail to get the obs free point
         {
-          ROS_WARN("WARN! terminal point of the current trajectory is in obstacle, skip this planning.");
+          RCLCPP_WARN(rclcpp::get_logger("bspline_opt"), "WARN! terminal point of the current trajectory is in obstacle, skip this planning.");
 
           force_stop_type_ = STOP_FOR_ERROR;
           return false;
@@ -1281,7 +1285,7 @@ namespace ego_planner
         }
         else
         {
-          ROS_ERROR("a star error");
+          RCLCPP_ERROR(rclcpp::get_logger("bspline_opt"), "a star error");
           segment_ids.erase(segment_ids.begin() + i);
           i--;
         }
@@ -1382,7 +1386,7 @@ namespace ego_planner
             }
         }
         else
-          ROS_WARN("Failed to generate direction. It doesn't matter.");
+          RCLCPP_WARN(rclcpp::get_logger("bspline_opt"), "Failed to generate direction. It doesn't matter.");
       }
 
       force_stop_type_ = STOP_FOR_REBOUND;
@@ -1438,7 +1442,7 @@ namespace ego_planner
     int end_id = this->cps_.size; // Free end
     variable_num_ = 3 * (end_id - start_id);
 
-    ros::Time t0 = ros::Time::now(), t1, t2;
+    auto t0 = std::chrono::steady_clock::now(), t1 = t0, t2 = t0;
     int restart_nums = 0, rebound_times = 0;
     ;
     bool flag_force_return, flag_occ, success;
@@ -1464,11 +1468,11 @@ namespace ego_planner
       lbfgs_params.g_epsilon = 0.01;
 
       /* ---------- optimize ---------- */
-      t1 = ros::Time::now();
+      t1 = std::chrono::steady_clock::now();
       int result = lbfgs::lbfgs_optimize(variable_num_, q, &final_cost, BsplineOptimizer::costFunctionRebound, NULL, BsplineOptimizer::earlyExit, this, &lbfgs_params);
-      t2 = ros::Time::now();
-      double time_ms = (t2 - t1).toSec() * 1000;
-      double total_time_ms = (t2 - t0).toSec() * 1000;
+      t2 = std::chrono::steady_clock::now();
+      double time_ms = std::chrono::duration<double, std::milli>(t2 - t1).count();
+      double total_time_ms = std::chrono::duration<double, std::milli>(t2 - t0).count();
 
       /* ---------- success temporary, check collision again ---------- */
       if (result == lbfgs::LBFGS_CONVERGENCE ||
@@ -1476,7 +1480,7 @@ namespace ego_planner
           result == lbfgs::LBFGS_ALREADY_MINIMIZED ||
           result == lbfgs::LBFGS_STOP)
       {
-        //ROS_WARN("Solver error in planning!, return = %s", lbfgs::lbfgs_strerror(result));
+        //RCLCPP_WARN(rclcpp::get_logger("bspline_opt"), "Solver error in planning!, return = %s", lbfgs::lbfgs_strerror(result));
         flag_force_return = false;
 
         /*** collision check, phase 1 ***/
@@ -1510,7 +1514,7 @@ namespace ego_planner
               //      << cps_.points.col(2).transpose() << "\n"
               //      << cps_.points.col(3).transpose() << "\n"
               //      << cps_.points.col(4).transpose() << endl;
-              ROS_WARN("First 3 control points in obstacles! return false, t=%f", t);
+              RCLCPP_WARN(rclcpp::get_logger("bspline_opt"), "First 3 control points in obstacles! return false, t=%f", t);
               return false;
             }
 
@@ -1588,7 +1592,7 @@ namespace ego_planner
       }
       else
       {
-        ROS_WARN("Solver error. Return = %d, %s. Skip this planning.", result, lbfgs::lbfgs_strerror(result));
+        RCLCPP_WARN(rclcpp::get_logger("bspline_opt"), "Solver error. Return = %d, %s. Skip this planning.", result, lbfgs::lbfgs_strerror(result));
         // while (ros::ok());
       }
 
@@ -1632,7 +1636,7 @@ namespace ego_planner
       }
       else
       {
-        ROS_ERROR("Solver error in refining!, return = %d, %s", result, lbfgs::lbfgs_strerror(result));
+        RCLCPP_ERROR(rclcpp::get_logger("bspline_opt"), "Solver error in refining!, return = %d, %s", result, lbfgs::lbfgs_strerror(result));
       }
 
       UniformBspline traj = UniformBspline(cps_.points, 3, bspline_interval_);

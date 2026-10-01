@@ -6,7 +6,7 @@
 #include <bspline_opt/uniform_bspline.h>
 #include <plan_env/grid_map.h>
 #include <plan_env/obj_predictor.h>
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include "bspline_opt/lbfgs.hpp"
 #include <traj_utils/plan_container.hpp>
 
@@ -50,7 +50,7 @@ namespace ego_planner
 
       if (start < 0 || end >= size || points.rows() != 3)
       {
-        ROS_ERROR("Wrong segment index! start=%d, end=%d", start, end);
+        RCLCPP_ERROR(rclcpp::get_logger("bspline_opt"), "Wrong segment index! start=%d, end=%d", start, end);
         return;
       }
 
@@ -65,7 +65,7 @@ namespace ego_planner
 
         // if ( buf.base_point[i - start].size() > 1 )
         // {
-        //   ROS_ERROR("buf.base_point[i - start].size()=%d, base_point[i].size()=%d", buf.base_point[i - start].size(), base_point[i].size());
+        //   RCLCPP_ERROR(rclcpp::get_logger("bspline_opt"), "buf.base_point[i - start].size()=%d, base_point[i].size()=%d", buf.base_point[i - start].size(), base_point[i].size());
         // }
       }
 
@@ -92,7 +92,7 @@ namespace ego_planner
     /* main API */
     void setEnvironment(const GridMap::Ptr &map);
     void setEnvironment(const GridMap::Ptr &map, const fast_planner::ObjPredictor::Ptr mov_obj);
-    void setParam(ros::NodeHandle &nh);
+    void setParam(const rclcpp::Node::SharedPtr &nh);
     Eigen::MatrixXd BsplineOptimizeTraj(const Eigen::MatrixXd &points, const double &ts,
                                         const int &cost_function, int max_num_id, int max_time_id);
 
@@ -128,6 +128,7 @@ namespace ego_planner
 
   private:
     GridMap::Ptr grid_map_;
+    rclcpp::Clock::SharedPtr clock_; // node clock (sim time aware), same time base as trajectory stamps
     fast_planner::ObjPredictor::Ptr moving_objs_;
     SwarmTrajData *swarm_trajs_{NULL}; // Can not use shared_ptr and no need to free
     int drone_id_;

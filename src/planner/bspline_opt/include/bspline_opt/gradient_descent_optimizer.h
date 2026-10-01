@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <limits>
 #include <Eigen/Eigen>
 
 using namespace std;
@@ -39,8 +40,8 @@ public:
 
 private:
   int variable_num_{0};
-  int iter_limit_{1e10};
-  int invoke_limit_{1e10};
+  int iter_limit_{std::numeric_limits<int>::max()}; // was {1e10}: out of int range, GCC saturated it
+  int invoke_limit_{std::numeric_limits<int>::max()};
   double xtol_rel_;
   double xtol_abs_;
   double min_grad_;

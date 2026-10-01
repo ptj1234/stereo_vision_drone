@@ -1,5 +1,5 @@
 #include "bspline_opt/uniform_bspline.h"
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 namespace ego_planner
 {

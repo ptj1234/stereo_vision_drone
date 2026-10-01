@@ -4,19 +4,19 @@
 #include <Eigen/Eigen>
 #include <algorithm>
 #include <iostream>
-#include <nav_msgs/Path.h>
-#include <sensor_msgs/Imu.h>
-#include <ros/ros.h>
-#include <std_msgs/Empty.h>
+#include <nav_msgs/msg/path.hpp>
+#include <sensor_msgs/msg/imu.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/empty.hpp>
 #include <vector>
-#include <visualization_msgs/Marker.h>
+#include <visualization_msgs/msg/marker.hpp>
 
 #include <bspline_opt/bspline_optimizer.h>
 #include <plan_env/grid_map.h>
-#include <traj_utils/Bspline.h>
-#include <traj_utils/MultiBsplines.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <traj_utils/DataDisp.h>
+#include <traj_utils/msg/bspline.hpp>
+#include <traj_utils/msg/multi_bsplines.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <traj_utils/msg/data_disp.hpp>
 #include <plan_manage/planner_manager.h>
 #include <traj_utils/planning_visualization.h>
 
@@ -50,8 +50,8 @@ namespace ego_planner
     /* planning utils */
     EGOPlannerManager::Ptr planner_manager_;
     PlanningVisualization::Ptr visualization_;
-    traj_utils::DataDisp data_disp_;
-    traj_utils::MultiBsplines multi_bspline_msgs_buf_;
+    traj_utils::msg::DataDisp data_disp_;
+    traj_utils::msg::MultiBsplines multi_bspline_msgs_buf_;
 
     /* parameters */
     int target_type_; // 1 mannual select, 2 hard code
@@ -80,10 +80,20 @@ namespace ego_planner
     bool flag_escape_emergency_;
 
     /* ROS utils */
-    ros::NodeHandle node_;
-    ros::Timer exec_timer_, safety_timer_;
-    ros::Subscriber waypoint_sub_, odom_sub_, swarm_trajs_sub_, broadcast_bspline_sub_, trigger_sub_;
-    ros::Publisher replan_pub_, new_pub_, bspline_pub_, data_disp_pub_, swarm_trajs_pub_, broadcast_bspline_pub_;
+    rclcpp::Node::SharedPtr node_;
+    rclcpp::TimerBase::SharedPtr exec_timer_, safety_timer_;
+    rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr waypoint_sub_, trigger_sub_;
+    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
+    rclcpp::Subscription<traj_utils::msg::MultiBsplines>::SharedPtr swarm_trajs_sub_;
+    rclcpp::Subscription<traj_utils::msg::Bspline>::SharedPtr broadcast_bspline_sub_;
+    rclcpp::Publisher<traj_utils::msg::Bspline>::SharedPtr bspline_pub_, broadcast_bspline_pub_;
+    rclcpp::Publisher<traj_utils::msg::DataDisp>::SharedPtr data_disp_pub_;
+    rclcpp::Publisher<traj_utils::msg::MultiBsplines>::SharedPtr swarm_trajs_pub_;
+
+    // ROS 1 waited for EXEC_TRAJ inside planNextWaypoint() by calling ros::spinOnce() from a
+    // callback. ROS 2 cannot spin from inside a callback, so the switch to REPLAN_TRAJ is
+    // deferred to execFSMCallback() instead.
+    bool pending_replan_trigger_{false};
 
     /* helper functions */
     bool callReboundReplan(bool flag_use_poly_init, bool flag_randomPolyTraj); // front-end and back-end method
@@ -101,13 +111,13 @@ namespace ego_planner
     void getLocalTarget();
 
     /* ROS functions */
-    void execFSMCallback(const ros::TimerEvent &e);
-    void checkCollisionCallback(const ros::TimerEvent &e);
-    void waypointCallback(const geometry_msgs::PoseStampedPtr &msg);
-    void triggerCallback(const geometry_msgs::PoseStampedPtr &msg);
-    void odometryCallback(const nav_msgs::OdometryConstPtr &msg);
-    void swarmTrajsCallback(const traj_utils::MultiBsplinesPtr &msg);
-    void BroadcastBsplineCallback(const traj_utils::BsplinePtr &msg);
+    void execFSMCallback();
+    void checkCollisionCallback();
+    void waypointCallback(const geometry_msgs::msg::PoseStamped::ConstSharedPtr &msg);
+    void triggerCallback(const geometry_msgs::msg::PoseStamped::ConstSharedPtr &msg);
+    void odometryCallback(const nav_msgs::msg::Odometry::ConstSharedPtr &msg);
+    void swarmTrajsCallback(const traj_utils::msg::MultiBsplines::ConstSharedPtr &msg);
+    void BroadcastBsplineCallback(const traj_utils::msg::Bspline::ConstSharedPtr &msg);
 
     bool checkCollision();
     void publishSwarmTrajs(bool startup_pub);
@@ -120,7 +130,7 @@ namespace ego_planner
     {
     }
 
-    void init(ros::NodeHandle &nh);
+    void init(const rclcpp::Node::SharedPtr &nh);
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
