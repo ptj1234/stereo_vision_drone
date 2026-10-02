@@ -2,27 +2,29 @@
 #include <math.h>
 #include <random>
 #include <eigen3/Eigen/Dense>
-#include <ros/ros.h>
-#include <nav_msgs/Odometry.h>
-#include "quadrotor_msgs/PositionCommand.h"
+#include <rclcpp/rclcpp.hpp>
+#include <nav_msgs/msg/odometry.hpp>
+#include "quadrotor_msgs/msg/position_command.hpp"
+#include <plan_env/param_helper.hpp>
 
-ros::Subscriber _cmd_sub;
-ros::Publisher  _odom_pub;
+rclcpp::Node::SharedPtr _node;
+rclcpp::Subscription<quadrotor_msgs::msg::PositionCommand>::SharedPtr _cmd_sub;
+rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr _odom_pub;
 
-quadrotor_msgs::PositionCommand _cmd;
+quadrotor_msgs::msg::PositionCommand _cmd;
 double _init_x, _init_y, _init_z;
 
 bool rcv_cmd = false;
-void rcvPosCmdCallBack(const quadrotor_msgs::PositionCommand cmd)
+void rcvPosCmdCallBack(const quadrotor_msgs::msg::PositionCommand::ConstSharedPtr cmd)
 {	
 	rcv_cmd = true;
-	_cmd    = cmd;
+	_cmd    = *cmd;
 }
 
 void pubOdom()
 {	
-	nav_msgs::Odometry odom;
-	odom.header.stamp    = ros::Time::now();
+	nav_msgs::msg::Odometry odom;
+	odom.header.stamp    = _node->now();
 	odom.header.frame_id = "world";
 
 	if(rcv_cmd)
@@ -75,30 +77,33 @@ void pubOdom()
 	    odom.twist.twist.angular.z = 0.0;
 	}
 
-    _odom_pub.publish(odom);
+    _odom_pub->publish(odom);
 }
 
 int main (int argc, char** argv) 
 {        
-    ros::init (argc, argv, "odom_generator");
-    ros::NodeHandle nh( "~" );
+    rclcpp::init(argc, argv);
+    _node = rclcpp::Node::make_shared("odom_generator");
+    auto executor = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
+    executor->add_node(_node);
 
-    nh.param("init_x", _init_x,  0.0);
-    nh.param("init_y", _init_y,  0.0);
-    nh.param("init_z", _init_z,  0.0);
+    param_helper::param(_node, "init_x", _init_x,  0.0);
+    param_helper::param(_node, "init_y", _init_y,  0.0);
+    param_helper::param(_node, "init_z", _init_z,  0.0);
 
-    _cmd_sub  = nh.subscribe( "command", 1, rcvPosCmdCallBack );
-    _odom_pub = nh.advertise<nav_msgs::Odometry>("odometry", 1);                      
+    _cmd_sub  = _node->create_subscription<quadrotor_msgs::msg::PositionCommand>("~/command", 1, rcvPosCmdCallBack);
+    _odom_pub = _node->create_publisher<nav_msgs::msg::Odometry>("~/odometry", 1);
 
-    ros::Rate rate(100);
-    bool status = ros::ok();
+    rclcpp::WallRate rate(100);
+    bool status = rclcpp::ok();
     while(status) 
     {
 		pubOdom();                   
-        ros::spinOnce();
-        status = ros::ok();
+        executor->spin_all(std::chrono::milliseconds(0));
+        status = rclcpp::ok();
         rate.sleep();
     }
 
+    rclcpp::shutdown();
     return 0;
 }
