@@ -1,35 +1,23 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.8)
 project(rosmsg_tcp_bridge)
 
-set(CMAKE_BUILD_TYPE "Release")
-ADD_COMPILE_OPTIONS(-std=c++11 )
-ADD_COMPILE_OPTIONS(-std=c++14 )
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -Wall -g")
 
-find_package(Eigen3 REQUIRED)
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(traj_utils REQUIRED)
+find_package(plan_env REQUIRED)
 
-find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  std_msgs
-  geometry_msgs
-  traj_utils
-)
+add_executable(bridge_node src/bridge_node.cpp)
+ament_target_dependencies(bridge_node rclcpp std_msgs nav_msgs traj_utils plan_env)
 
-catkin_package(
- CATKIN_DEPENDS traj_utils
-)
+install(TARGETS bridge_node DESTINATION lib/${PROJECT_NAME})
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 
-include_directories(
-  SYSTEM
-  ${catkin_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/include
-  ${EIGEN3_INCLUDE_DIR}
-)
-
-add_executable(bridge_node
-  src/bridge_node.cpp 
-  )
-target_link_libraries(bridge_node 
-  ${catkin_LIBRARIES}
-  )
-
-
+ament_package()
