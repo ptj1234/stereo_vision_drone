@@ -1,140 +1,159 @@
 Panels:
-  - Class: rviz/Displays
-    Help Height: 78
-    Name: Displays
-    Property Tree Widget:
-      Expanded:
-        - /Global Options1
-        - /UAV1
-      Splitter Ratio: 0.5
-    Tree Height: 703
-  - Class: rviz/Selection
-    Name: Selection
-  - Class: rviz/Tool Properties
+- Class: rviz_common/Displays
+  Help Height: 78
+  Name: Displays
+  Property Tree Widget:
     Expanded:
-      - /2D Pose Estimate1
-      - /2D Nav Goal1
-      - /Publish Point1
-      - /3D Nav Goal1
-    Name: Tool Properties
-    Splitter Ratio: 0.588679016
-  - Class: rviz/Views
-    Expanded:
-      - /Current View1
-    Name: Views
+    - /Global Options1
+    - /UAV1
     Splitter Ratio: 0.5
-  - Class: rviz/Time
-    Experimental: false
-    Name: Time
-    SyncMode: 0
-    SyncSource: ""
+  Tree Height: 703
+- Class: rviz_common/Selection
+  Name: Selection
+- Class: rviz_common/Tool Properties
+  Expanded:
+  - /2D Pose Estimate1
+  - /2D Nav Goal1
+  - /Publish Point1
+  - /3D Nav Goal1
+  Name: Tool Properties
+  Splitter Ratio: 0.588679016
+- Class: rviz_common/Views
+  Expanded:
+  - /Current View1
+  Name: Views
+  Splitter Ratio: 0.5
+- Class: rviz_common/Time
+  Experimental: false
+  Name: Time
+  SyncMode: 0
+  SyncSource: ''
 Toolbars:
   toolButtonStyle: 2
 Visualization Manager:
-  Class: ""
+  Class: ''
   Displays:
-    - Alpha: 0.5
-      Cell Size: 1
-      Class: rviz/Grid
-      Color: 138; 138; 138
-      Enabled: true
-      Line Style:
-        Line Width: 0.0299999993
-        Value: Lines
-      Name: Grid
-      Normal Cell Count: 0
-      Offset:
-        X: 0
-        Y: 0
-        Z: 0
-      Plane: XY
-      Plane Cell Count: 10
-      Reference Frame: <Fixed Frame>
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /odom_visualization/robot
-      Name: UAV
-      Namespaces:
-        mesh: true
-      Queue Size: 100
-      Value: true
-    - Alpha: 1
-      Buffer Length: 1
-      Class: rviz/Path
-      Color: 255; 85; 255
-      Enabled: true
-      Head Diameter: 0.300000012
-      Head Length: 0.200000003
-      Length: 0.300000012
-      Line Style: Lines
+  - Alpha: 0.5
+    Cell Size: 1
+    Class: rviz_default_plugins/Grid
+    Color: 138; 138; 138
+    Enabled: true
+    Line Style:
       Line Width: 0.0299999993
-      Name: Path
-      Offset:
-        X: 0
-        Y: 0
-        Z: 0
-      Pose Color: 255; 85; 255
-      Pose Style: None
-      Radius: 0.0299999993
-      Shaft Diameter: 0.100000001
-      Shaft Length: 0.100000001
-      Topic: /odom_visualization_1/path
-      Unreliable: false
-      Value: true
-    - Alpha: 1
-      Axes Length: 1
-      Axes Radius: 0.100000001
-      Class: rviz/Pose
-      Color: 0; 255; 0
-      Enabled: true
-      Head Length: 0.300000012
-      Head Radius: 0.100000001
-      Name: Pose
-      Shaft Length: 1
-      Shaft Radius: 0.0500000007
-      Shape: Arrow
-      Topic: /odom_visualization_1/pose
-      Unreliable: false
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /odom_visualization_1/velocity
-      Name: Velocity
-      Namespaces:
-        {}
-      Queue Size: 100
-      Value: true
-    - Alpha: 1
-      Buffer Length: 1
-      Class: rviz/Path
-      Color: 255; 85; 255
-      Enabled: true
-      Head Diameter: 0.300000012
-      Head Length: 0.200000003
-      Length: 0.300000012
-      Line Style: Lines
-      Line Width: 0.0299999993
-      Name: Path
-      Offset:
-        X: 0
-        Y: 0
-        Z: 0
-      Pose Color: 255; 85; 255
-      Pose Style: None
-      Radius: 0.0299999993
-      Shaft Diameter: 0.100000001
-      Shaft Length: 0.100000001
-      Topic: /CircleNode_1/path
-      Unreliable: false
-      Value: true
-    - Class: rviz/Axes
-      Enabled: true
-      Length: 1
-      Name: Axes
-      Radius: 0.100000001
-      Reference Frame: <Fixed Frame>
-      Value: true
+      Value: Lines
+    Name: Grid
+    Normal Cell Count: 0
+    Offset:
+      X: 0
+      Y: 0
+      Z: 0
+    Plane: XY
+    Plane Cell Count: 10
+    Reference Frame: <Fixed Frame>
+    Value: true
+  - Class: rviz_default_plugins/Marker
+    Enabled: true
+    Name: UAV
+    Namespaces:
+      mesh: true
+    Value: true
+    Topic:
+      Value: /odom_visualization/robot
+      Depth: 100
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+  - Alpha: 1
+    Buffer Length: 1
+    Class: rviz_default_plugins/Path
+    Color: 255; 85; 255
+    Enabled: true
+    Head Diameter: 0.300000012
+    Head Length: 0.200000003
+    Length: 0.300000012
+    Line Style: Lines
+    Line Width: 0.0299999993
+    Name: Path
+    Offset:
+      X: 0
+      Y: 0
+      Z: 0
+    Pose Color: 255; 85; 255
+    Pose Style: None
+    Radius: 0.0299999993
+    Shaft Diameter: 0.100000001
+    Shaft Length: 0.100000001
+    Topic:
+      Value: /odom_visualization_1/path
+      Depth: 5
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+    Value: true
+  - Alpha: 1
+    Axes Length: 1
+    Axes Radius: 0.100000001
+    Class: rviz_default_plugins/Pose
+    Color: 0; 255; 0
+    Enabled: true
+    Head Length: 0.300000012
+    Head Radius: 0.100000001
+    Name: Pose
+    Shaft Length: 1
+    Shaft Radius: 0.0500000007
+    Shape: Arrow
+    Topic:
+      Value: /odom_visualization_1/pose
+      Depth: 5
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+    Value: true
+  - Class: rviz_default_plugins/Marker
+    Enabled: true
+    Name: Velocity
+    Namespaces: {}
+    Value: true
+    Topic:
+      Value: /odom_visualization_1/velocity
+      Depth: 100
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+  - Alpha: 1
+    Buffer Length: 1
+    Class: rviz_default_plugins/Path
+    Color: 255; 85; 255
+    Enabled: true
+    Head Diameter: 0.300000012
+    Head Length: 0.200000003
+    Length: 0.300000012
+    Line Style: Lines
+    Line Width: 0.0299999993
+    Name: Path
+    Offset:
+      X: 0
+      Y: 0
+      Z: 0
+    Pose Color: 255; 85; 255
+    Pose Style: None
+    Radius: 0.0299999993
+    Shaft Diameter: 0.100000001
+    Shaft Length: 0.100000001
+    Topic:
+      Value: /CircleNode_1/path
+      Depth: 5
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+    Value: true
+  - Class: rviz_default_plugins/Axes
+    Enabled: true
+    Length: 1
+    Name: Axes
+    Radius: 0.100000001
+    Reference Frame: <Fixed Frame>
+    Value: true
   Enabled: true
   Global Options:
     Background Color: 89; 89; 89
@@ -143,35 +162,38 @@ Visualization Manager:
     Frame Rate: 30
   Name: root
   Tools:
-    - Class: rviz/Interact
-      Hide Inactive Objects: true
-    - Class: rviz/MoveCamera
-    - Class: rviz/Select
-    - Class: rviz/FocusCamera
-    - Class: rviz/Measure
-    - Class: rviz/SetInitialPose
-      Topic: /initialpose
-    - Class: rviz/SetGoal
-      Topic: /move_base_simple/goal
-    - Class: rviz/PublishPoint
-      Single click: true
-      Topic: /clicked_point
-    - Class: rviz_plugins/GameLikeInput
-      RangeX_max: 4
-      RangeX_min: -4
-      RangeY_max: 2.5
-      RangeY_min: -2.5
-      RangeZ_max: 1.70000005
-      RangeZ_min: 0.800000012
-      TopicPoint: point_list
-      TopicSelect: select_list
-      TopicSwarm: swarm
-    - Class: rviz_plugins/Goal3DTool
-      Topic: goal
+  - Class: rviz_default_plugins/Interact
+    Hide Inactive Objects: true
+  - Class: rviz_default_plugins/MoveCamera
+  - Class: rviz_default_plugins/Select
+  - Class: rviz_default_plugins/FocusCamera
+  - Class: rviz_default_plugins/Measure
+  - Class: rviz_default_plugins/SetInitialPose
+    Topic:
+      Value: /initialpose
+      Depth: 1
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+  - Class: rviz_default_plugins/SetGoal
+    Topic:
+      Value: /move_base_simple/goal
+      Depth: 1
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+  - Class: rviz_default_plugins/PublishPoint
+    Single click: true
+    Topic:
+      Value: /clicked_point
+      Depth: 1
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
   Value: true
   Views:
     Current:
-      Class: rviz/Orbit
+      Class: rviz_default_plugins/Orbit
       Distance: 14.550209
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
@@ -189,9 +211,9 @@ Visualization Manager:
       Near Clip Distance: 0.00999999978
       Pitch: 0.759796858
       Target Frame: <Fixed Frame>
-      Value: Orbit (rviz)
+      Value: Orbit (rviz_default_plugins)
       Yaw: 4.71485233
-    Saved: ~
+    Saved: []
 Window Geometry:
   Displays:
     collapsed: false
