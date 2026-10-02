@@ -1,0 +1,66 @@
+<launch>  
+   <arg name="init_x" default="-4"/>
+   <arg name="init_y" default="0"/>
+   <arg name="init_z" default="4"/>
+
+   <!-- Simulator -->
+   <node pkg="so3_quadrotor_simulator"
+         exec="quadrotor_simulator_so3"
+         name="quadrotor_simulator_so3"
+         output="screen">
+     <param name="rate.odom" value="100.0"/>
+
+     <param name="simulator.init_state_x" value="$(var init_x)"/>
+     <param name="simulator.init_state_y" value="$(var init_y)"/>
+     <param name="simulator.init_state_z" value="$(var init_z)"/>
+     <remap from="~/odom" to="/sim/odom"/>
+     <remap from="~/cmd" to="/so3_cmd"/>
+     <remap from="~/imu" to="/sim/imu"/>     
+   </node>
+ 
+   <!-- Controller -->  
+   <node pkg="so3_control"
+     exec="so3_control_node"
+     name="so3_control"
+     on_exit="shutdown"
+     output="screen">
+     <param name="so3_control.init_state_x" value="$(var init_x)"/>
+     <param name="so3_control.init_state_y" value="$(var init_y)"/>
+     <param name="so3_control.init_state_z" value="$(var init_z)"/>
+     <remap from="~/odom" to="/sim/odom"/>
+     <remap from="~/position_cmd" to="/position_cmd"/>
+     <remap from="~/motors" to="motors"/>
+     <remap from="~/corrections" to="corrections"/>
+     <remap from="~/so3_cmd" to="/so3_cmd"/>
+     <remap from="~/imu" to="/sim/imu"/>
+     <param from="$(find-pkg-share so3_control)/config/gains_hummingbird.yaml"/>
+     <param from="$(find-pkg-share so3_control)/config/corrections_hummingbird.yaml"/>
+     <param name="mass" value="0.98"/>
+     <param name="use_angle_corrections" value="false"/>
+     <param name="use_external_yaw"      value="false"/>
+     <param name="gains.rot.z" value="1.0"/>    
+     <param name="gains.ang.z" value="0.1"/>        
+   </node>  
+
+ 
+   <!--node pkg="so3_control" name="control_example" type="control_example" output="screen"/-->
+ 
+   <!-- Visualization -->
+  <node pkg="odom_visualization" name="odom_visualization" exec="odom_visualization" output="screen">
+        <remap from="~/odom" to="/sim/odom"/>
+        <param name="color.a" value="0.5"/>    
+        <param name="color.r" value="1.0"/>        
+        <param name="color.g" value="0.0"/>        
+        <param name="color.b" value="0.0"/>       
+        <param name="covariance_scale" value="100.0"/>       
+        <param name="robot_scale" value="1.0"/>
+        <param name="tf45" value="true"/>
+  </node>
+
+   <node name="rviz" pkg="rviz2" exec="rviz2"
+      args="-d $(find-pkg-share so3_quadrotor_simulator)/config/rviz.rviz"
+      />
+ </launch>
+
+
+

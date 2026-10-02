@@ -1,0 +1,26 @@
+<launch>
+  <node pkg="mockamap" exec="mockamap_node" name="mockamap_node" output="screen">
+  <param name="seed" value="511"/>
+  <param name="update_freq" value="1.0"/>
+
+  <!--  box edge length, unit meter-->
+  <param name="resolution" value="0.1"/>
+
+  <!-- map size unit meter-->
+  <param name="x_length" value="20"/>
+  <param name="y_length" value="20"/>
+  <param name="z_length" value="20"/>
+
+  <param name="type" value="4"/>
+    <param name="numNodes"    value="64"/>
+    <param name="connectivity" value="0.5"/>
+    <param name="roadRad" value="4"/>
+    <param name="nodeRad" value="3"/>
+    
+    <!--    maze type: -->
+  </node>
+  <!-- Launch RViz with the demo configuration -->
+  <node name="rviz" pkg="rviz2" exec="rviz2"
+        args="-d $(find-pkg-share mockamap)/config/rviz.rviz"
+        />
+</launch>

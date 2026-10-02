@@ -1,9 +1,11 @@
 #include <Eigen/Geometry>
-#include <nav_msgs/Odometry.h>
-#include <quadrotor_msgs/SO3Command.h>
+#include <geometry_msgs/msg/vector3.hpp>
+#include <nav_msgs/msg/odometry.hpp>
+#include <quadrotor_msgs/msg/so3_command.hpp>
 #include <quadrotor_simulator/Quadrotor.h>
-#include <ros/ros.h>
-#include <sensor_msgs/Imu.h>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/imu.hpp>
+#include <plan_env/param_helper.hpp>
 #include <uav_utils/geometry_utils.h>
 
 typedef struct _Control
@@ -32,9 +34,9 @@ static Command     command;
 static Disturbance disturbance;
 
 void stateToOdomMsg(const QuadrotorSimulator::Quadrotor::State& state,
-                    nav_msgs::Odometry&                         odom);
+                    nav_msgs::msg::Odometry&                         odom);
 void quadToImuMsg(const QuadrotorSimulator::Quadrotor& quad,
-                  sensor_msgs::Imu&                    imu);
+                  sensor_msgs::msg::Imu&                    imu);
 
 static Control
 getControl(const QuadrotorSimulator::Quadrotor& quad, const Command& cmd)
@@ -158,7 +160,7 @@ getControl(const QuadrotorSimulator::Quadrotor& quad, const Command& cmd)
 }
 
 static void
-cmd_callback(const quadrotor_msgs::SO3Command::ConstPtr& cmd)
+cmd_callback(const quadrotor_msgs::msg::SO3Command::ConstSharedPtr cmd)
 {
   command.force[0]         = cmd->force.x;
   command.force[1]         = cmd->force.y;
@@ -167,12 +169,12 @@ cmd_callback(const quadrotor_msgs::SO3Command::ConstPtr& cmd)
   command.qy               = cmd->orientation.y;
   command.qz               = cmd->orientation.z;
   command.qw               = cmd->orientation.w;
-  command.kR[0]            = cmd->kR[0];
-  command.kR[1]            = cmd->kR[1];
-  command.kR[2]            = cmd->kR[2];
-  command.kOm[0]           = cmd->kOm[0];
-  command.kOm[1]           = cmd->kOm[1];
-  command.kOm[2]           = cmd->kOm[2];
+  command.kR[0]            = cmd->kr[0];
+  command.kR[1]            = cmd->kr[1];
+  command.kR[2]            = cmd->kr[2];
+  command.kOm[0]           = cmd->kom[0];
+  command.kOm[1]           = cmd->kom[1];
+  command.kOm[2]           = cmd->kom[2];
   command.corrections[0]   = cmd->aux.kf_correction;
   command.corrections[1]   = cmd->aux.angle_corrections[0];
   command.corrections[2]   = cmd->aux.angle_corrections[1];
@@ -181,7 +183,7 @@ cmd_callback(const quadrotor_msgs::SO3Command::ConstPtr& cmd)
 }
 
 static void
-force_disturbance_callback(const geometry_msgs::Vector3::ConstPtr& f)
+force_disturbance_callback(const geometry_msgs::msg::Vector3::ConstSharedPtr f)
 {
   disturbance.f(0) = f->x;
   disturbance.f(1) = f->y;
@@ -189,7 +191,7 @@ force_disturbance_callback(const geometry_msgs::Vector3::ConstPtr& f)
 }
 
 static void
-moment_disturbance_callback(const geometry_msgs::Vector3::ConstPtr& m)
+moment_disturbance_callback(const geometry_msgs::msg::Vector3::ConstSharedPtr m)
 {
   disturbance.m(0) = m->x;
   disturbance.m(1) = m->y;
@@ -199,54 +201,58 @@ moment_disturbance_callback(const geometry_msgs::Vector3::ConstPtr& m)
 int
 main(int argc, char** argv)
 {
-  ros::init(argc, argv, "quadrotor_simulator_so3");
+  rclcpp::init(argc, argv);
 
-  ros::NodeHandle n("~");
+  auto n = rclcpp::Node::make_shared("quadrotor_simulator_so3");
+  auto executor = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
+  executor->add_node(n);
 
-  ros::Publisher  odom_pub = n.advertise<nav_msgs::Odometry>("odom", 100);
-  ros::Publisher  imu_pub  = n.advertise<sensor_msgs::Imu>("imu", 10);
-  ros::Subscriber cmd_sub =
-    n.subscribe("cmd", 100, &cmd_callback, ros::TransportHints().tcpNoDelay());
-  ros::Subscriber f_sub =
-    n.subscribe("force_disturbance", 100, &force_disturbance_callback,
-                ros::TransportHints().tcpNoDelay());
-  ros::Subscriber m_sub =
-    n.subscribe("moment_disturbance", 100, &moment_disturbance_callback,
-                ros::TransportHints().tcpNoDelay());
+  auto odom_pub = n->create_publisher<nav_msgs::msg::Odometry>("~/odom", 100);
+  auto imu_pub  = n->create_publisher<sensor_msgs::msg::Imu>("~/imu", 10);
+  auto cmd_sub =
+    n->create_subscription<quadrotor_msgs::msg::SO3Command>("~/cmd", 100, &cmd_callback);
+  auto f_sub =
+    n->create_subscription<geometry_msgs::msg::Vector3>("~/force_disturbance", 100, &force_disturbance_callback);
+  auto m_sub =
+    n->create_subscription<geometry_msgs::msg::Vector3>("~/moment_disturbance", 100, &moment_disturbance_callback);
 
   QuadrotorSimulator::Quadrotor quad;
   double                        _init_x, _init_y, _init_z;
-  n.param("simulator/init_state_x", _init_x, 0.0);
-  n.param("simulator/init_state_y", _init_y, 0.0);
-  n.param("simulator/init_state_z", _init_z, 1.0);
+  param_helper::param(n, "simulator/init_state_x", _init_x, 0.0);
+  param_helper::param(n, "simulator/init_state_y", _init_y, 0.0);
+  param_helper::param(n, "simulator/init_state_z", _init_z, 1.0);
 
   Eigen::Vector3d position = Eigen::Vector3d(_init_x, _init_y, _init_z);
   quad.setStatePos(position);
 
   double simulation_rate;
-  n.param("rate/simulation", simulation_rate, 1000.0);
-  ROS_ASSERT(simulation_rate > 0);
+  param_helper::param(n, "rate/simulation", simulation_rate, 1000.0);
+  if (!(simulation_rate > 0))
+  {
+    RCLCPP_FATAL(n->get_logger(), "rate.simulation must be > 0");
+    return 1;
+  }
 
   double odom_rate;
-  n.param("rate/odom", odom_rate, 100.0);
-  const ros::Duration odom_pub_duration(1 / odom_rate);
+  param_helper::param(n, "rate/odom", odom_rate, 100.0);
+  const rclcpp::Duration odom_pub_duration = rclcpp::Duration::from_seconds(1 / odom_rate);
 
   std::string quad_name;
-  n.param("quadrotor_name", quad_name, std::string("quadrotor"));
+  param_helper::param(n, "quadrotor_name", quad_name, std::string("quadrotor"));
 
   QuadrotorSimulator::Quadrotor::State state = quad.getState();
 
-  ros::Rate    r(simulation_rate);
+  rclcpp::WallRate r(simulation_rate);
   const double dt = 1 / simulation_rate;
 
   Control control;
 
-  nav_msgs::Odometry odom_msg;
-  odom_msg.header.frame_id = "/world";
-  odom_msg.child_frame_id  = "/" + quad_name;
+  nav_msgs::msg::Odometry odom_msg;
+  odom_msg.header.frame_id = "world";
+  odom_msg.child_frame_id  = quad_name;
 
-  sensor_msgs::Imu imu;
-  imu.header.frame_id = "/simulator";
+  sensor_msgs::msg::Imu imu;
+  imu.header.frame_id = "simulator";
 
   /*
   command.force[0] = 0;
@@ -264,10 +270,10 @@ main(int argc, char** argv)
   command.kOm[2] = 0.15;
   */
 
-  ros::Time next_odom_pub_time = ros::Time::now();
-  while (n.ok())
+  rclcpp::Time next_odom_pub_time = n->now();
+  while (rclcpp::ok())
   {
-    ros::spinOnce();
+    executor->spin_all(std::chrono::milliseconds(0));
 
     auto last = control;
     control   = getControl(quad, command);
@@ -283,28 +289,30 @@ main(int argc, char** argv)
     quad.setExternalMoment(disturbance.m);
     quad.step(dt);
 
-    ros::Time tnow = ros::Time::now();
+    rclcpp::Time tnow = n->now();
 
     if (tnow >= next_odom_pub_time)
     {
-      next_odom_pub_time += odom_pub_duration;
+      next_odom_pub_time = next_odom_pub_time + odom_pub_duration;
       odom_msg.header.stamp = tnow;
+      imu.header.stamp      = tnow;
       state                 = quad.getState();
       stateToOdomMsg(state, odom_msg);
       quadToImuMsg(quad, imu);
-      odom_pub.publish(odom_msg);
-      imu_pub.publish(imu);
+      odom_pub->publish(odom_msg);
+      imu_pub->publish(imu);
     }
 
     r.sleep();
   }
 
+  rclcpp::shutdown();
   return 0;
 }
 
 void
 stateToOdomMsg(const QuadrotorSimulator::Quadrotor::State& state,
-               nav_msgs::Odometry&                         odom)
+               nav_msgs::msg::Odometry&                         odom)
 {
   odom.pose.pose.position.x = state.x(0);
   odom.pose.pose.position.y = state.x(1);
@@ -326,7 +334,7 @@ stateToOdomMsg(const QuadrotorSimulator::Quadrotor::State& state,
 }
 
 void
-quadToImuMsg(const QuadrotorSimulator::Quadrotor& quad, sensor_msgs::Imu& imu)
+quadToImuMsg(const QuadrotorSimulator::Quadrotor& quad, sensor_msgs::msg::Imu& imu)
 
 {
   QuadrotorSimulator::Quadrotor::State state = quad.getState();

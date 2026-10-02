@@ -1,0 +1,56 @@
+<launch>
+  <node pkg="mockamap" exec="mockamap_node" name="mockamap_node" output="screen">
+  <param name="seed" value="511"/>
+  <param name="update_freq" value="1.0"/>
+
+  <!--  box edge length, unit meter-->
+  <param name="resolution" value="0.1"/>
+
+  <!-- map size unit meter-->
+  <param name="x_length" value="10"/>
+  <param name="y_length" value="10"/>
+  <param name="z_length" value="3"/>
+  <!-- 1 perlin noise 3D -->
+  <!-- 2 perlin box random map-->
+  <!-- 3 2d maze still developing-->
+    <param name="type" value="1"/>
+
+<!-- 1 perlin noise parameters -->
+    <!-- complexity:    base noise frequency,
+                        large value will be complex
+                        typical 0.0 ~ 0.5 -->
+    <!-- fill:          infill persentage
+                        typical: 0.4 ~ 0.0 -->
+    <!-- fractal:       large value will have more detail-->
+    <!-- attenuation:   for fractal attenuation
+                        typical: 0.0 ~ 0.5 -->
+
+    <param name="complexity" value="0.03"/>
+    <param name="fill" value="0.3"/>
+    <param name="fractal"    value="1"/>
+    <param name="attenuation" value="0.1"/>
+
+<!--    <param name="type" value="2"/>-->
+    <param name="width_min" value="0.6"/>
+    <param name="width_max" value="1.5"/>
+    <param name="obstacle_number"    value="50"/>
+
+<!--    <param name="type" value="3"/>-->
+    <param name="road_width" value="0.5"/>
+    <param name="add_wall_x"    value="0"/>
+    <param name="add_wall_y"    value="1"/>
+    <!--    maze type: -->
+    <!--    1 recursive division maze-->
+    <param name="maze_type"    value="1"/>
+
+<!-- 4 maze 3d -->
+    <param name="numNodes"    value="40"/>
+    <param name="connectivity" value="0.8"/>
+    <param name="nodeRad"    value="1"/>
+    <param name="roadRad"    value="10"/>
+  </node>
+  <!-- Launch RViz with the demo configuration -->
+  <node name="rviz" pkg="rviz2" exec="rviz2"
+        args="-d $(find-pkg-share mockamap)/config/rviz.rviz"
+        />
+</launch>

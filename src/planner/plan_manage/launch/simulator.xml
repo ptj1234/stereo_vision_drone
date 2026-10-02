@@ -86,7 +86,7 @@
         <remap from="~/moment_disturbance" to="drone_$(var drone_id)_moment_disturbance"/>        
   </node>
  
-  <node pkg="nodelet" exec="nodelet" args="standalone so3_control/SO3ControlNodelet" name="drone_$(var drone_id)_so3_control" on_exit="shutdown" output="screen">
+  <node pkg="so3_control" exec="so3_control_node" name="drone_$(var drone_id)_so3_control" on_exit="shutdown" output="screen">
         <param name="so3_control.init_state_x" value="$(var init_x_)"/>
         <param name="so3_control.init_state_y" value="$(var init_y_)"/>
         <param name="so3_control.init_state_z" value="$(var init_z_)"/>
@@ -95,11 +95,11 @@
         <remap from="~/motors" to="drone_$(var drone_id)_motors"/>
         <remap from="~/corrections" to="drone_$(var drone_id)_corrections"/>
         <remap from="~/so3_cmd" to="drone_$(var drone_id)_so3_cmd"/>
-        <rosparam file="$(find-pkg-share so3_control)/config/gains_hummingbird.yaml"/>
-        <rosparam file="$(find-pkg-share so3_control)/config/corrections_hummingbird.yaml"/>
+        <param from="$(find-pkg-share so3_control)/config/gains_hummingbird.yaml"/>
+        <param from="$(find-pkg-share so3_control)/config/corrections_hummingbird.yaml"/>
         <param name="mass" value="0.98"/>
-        <param name="use_angle_corrections " value="false"/>
-        <param name="use_external_yaw "      value="false"/>
+        <param name="use_angle_corrections" value="false"/>
+        <param name="use_external_yaw"      value="false"/>
         <param name="gains.rot.z" value="1.0"/>    
         <param name="gains.ang.z" value="0.1"/>        
   </node>   -->

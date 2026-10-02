@@ -1,0 +1,30 @@
+<launch>
+  <node pkg="mockamap" exec="mockamap_node" name="mockamap_node" output="screen">
+  <param name="seed" value="511"/>
+  <param name="update_freq" value="1.0"/>
+
+  <!--  box edge length, unit meter-->
+  <param name="resolution" value="0.15"/>
+
+  <!-- map size unit meter-->
+  <param name="x_length" value="40"/>
+  <param name="y_length" value="20"/>
+  <param name="z_length" value="5"/>
+
+  <param name="type" value="1"/>
+    <!-- 1 perlin noise parameters -->
+    <!-- complexity:    base noise frequency,
+                        large value will be complex
+                        typical 0.0 ~ 0.5 -->
+    <!-- fill:          infill persentage
+                        typical: 0.4 ~ 0.0 -->
+    <!-- fractal:       large value will have more detail-->
+    <!-- attenuation:   for fractal attenuation
+                        typical: 0.0 ~ 0.5 -->
+
+    <param name="complexity" value="0.07"/>
+    <param name="fill" value="0.1"/>
+    <param name="fractal"    value="1"/>
+    <param name="attenuation" value="0.1"/>
+  </node>
+</launch>
