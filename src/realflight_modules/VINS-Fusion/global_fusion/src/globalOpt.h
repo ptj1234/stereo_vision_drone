@@ -18,10 +18,28 @@
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Geometry>
 #include <ceres/ceres.h>
-#include <nav_msgs/Odometry.h>
-#include <nav_msgs/Path.h>
+#include <cmath>
+#include <nav_msgs/msg/odometry.hpp>
+#include <nav_msgs/msg/path.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <builtin_interfaces/msg/time.hpp>
 #include "LocalCartesian.hpp"
 #include "tic_toc.h"
+
+// double seconds -> builtin_interfaces/Time (replacement for ros::Time(t))
+inline builtin_interfaces::msg::Time toRosTime(double t)
+{
+    builtin_interfaces::msg::Time stamp;
+    int64_t ns = static_cast<int64_t>(std::llround(t * 1e9));
+    stamp.sec = static_cast<int32_t>(ns / 1000000000LL);
+    stamp.nanosec = static_cast<uint32_t>(ns % 1000000000LL);
+    return stamp;
+}
+
+inline double toSec(const builtin_interfaces::msg::Time &stamp)
+{
+    return static_cast<double>(stamp.sec) + 1e-9 * static_cast<double>(stamp.nanosec);
+}
 
 using namespace std;
 
@@ -33,7 +51,7 @@ public:
 	void inputGPS(double t, double latitude, double longitude, double altitude, double posAccuracy);
 	void inputOdom(double t, Eigen::Vector3d OdomP, Eigen::Quaterniond OdomQ);
 	void getGlobalOdom(Eigen::Vector3d &odomP, Eigen::Quaterniond &odomQ);
-	nav_msgs::Path global_path;
+	nav_msgs::msg::Path global_path;
 
 private:
 	void GPS2XYZ(double latitude, double longitude, double altitude, double* xyz);

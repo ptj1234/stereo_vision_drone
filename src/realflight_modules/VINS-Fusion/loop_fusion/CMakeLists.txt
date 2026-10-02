@@ -1,31 +1,25 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.8)
 project(loop_fusion)
 
-set(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_CXX_STANDARD 11)
-#-DEIGEN_USE_MKL_ALL")
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
 
-find_package(catkin REQUIRED COMPONENTS
-    roscpp
-    std_msgs
-    nav_msgs
-    camera_models
-    cv_bridge
-    roslib
-    )
-
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(ament_index_cpp REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(camera_models REQUIRED)
 find_package(OpenCV 4 REQUIRED)
-
-
 find_package(Ceres REQUIRED)
-
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
-find_package(Eigen3)
-
-include_directories(${catkin_INCLUDE_DIRS} ${CERES_INCLUDE_DIRS}  ${EIGEN3_INCLUDE_DIR})
-
-catkin_package()
+find_package(Eigen3 REQUIRED)
 
 add_executable(loop_fusion_node
     src/pose_graph_node.cpp
@@ -42,5 +36,14 @@ add_executable(loop_fusion_node
     src/ThirdParty/DVision/BRIEF.cpp
     src/ThirdParty/VocabularyBinary.cpp
     )
+target_include_directories(loop_fusion_node PRIVATE ${EIGEN3_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
+ament_target_dependencies(loop_fusion_node
+  rclcpp ament_index_cpp std_msgs geometry_msgs nav_msgs sensor_msgs visualization_msgs
+  cv_bridge camera_models)
+target_link_libraries(loop_fusion_node ${OpenCV_LIBS} Ceres::ceres)
 
-target_link_libraries(loop_fusion_node ${catkin_LIBRARIES}  ${OpenCV_LIBS} ${CERES_LIBRARIES}) 
+install(TARGETS loop_fusion_node DESTINATION lib/${PROJECT_NAME})
+install(FILES ../support_files/brief_k10L6.bin ../support_files/brief_pattern.yml
+  DESTINATION share/${PROJECT_NAME}/support_files)
+
+ament_package()
