@@ -1,20 +1,25 @@
 <?xml version="1.0"?>
-<package format="2">
+<package format="3">
   <name>decomp_ros_utils</name>
   <version>0.0.0</version>
   <description>The decomp_ros_utils package</description>
-
   <maintainer email="sikang@todo.todo">sikang</maintainer>
-
   <license>TODO</license>
 
-  <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>catkin_simple</build_depend>
-  <depend>roscpp</depend>
-  <depend>rviz</depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rviz_common</depend>
+  <depend>rviz_rendering</depend>
+  <depend>pluginlib</depend>
   <depend>decomp_ros_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>eigen</depend>
+  <depend>qtbase5-dev</depend>
 
   <export>
-    <rviz plugin="${prefix}/plugin_description.xml"/>
+    <build_type>ament_cmake</build_type>
   </export>
 </package>

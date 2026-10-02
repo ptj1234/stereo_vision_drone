@@ -16,7 +16,7 @@ namespace decomp_rviz_plugins {
       return;
     objs_.resize(vs.size());
     for (auto &it : objs_)
-      it.reset(new rviz::Arrow(scene_manager_, frame_node_));
+      it.reset(new rviz_rendering::Arrow(scene_manager_, frame_node_));
 
     int cnt = 0;
     for (const auto &v : vs) {

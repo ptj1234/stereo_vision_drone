@@ -11,7 +11,7 @@ namespace decomp_rviz_plugins {
     scene_manager_->destroySceneNode(frame_node_);
   }
 
-  void EllipsoidArrayVisual::setMessage(const decomp_ros_msgs::EllipsoidArray::ConstPtr &msg) {
+  void EllipsoidArrayVisual::setMessage(const decomp_ros_msgs::msg::EllipsoidArray::ConstSharedPtr msg) {
     objs_.clear();
 
     if (msg->ellipsoids.empty())
@@ -24,14 +24,14 @@ namespace decomp_rviz_plugins {
         return;
       for (int i = 0; i < 3; i++)
         for (int j = 0; j < 3; j++)
-          if(std::isnan(it.E[3 * i + j]))
+          if(std::isnan(it.e[3 * i + j]))
             return;
     }
 
     objs_.resize(msg->ellipsoids.size());
 
     for (auto &it : objs_)
-      it.reset(new rviz::Shape(rviz::Shape::Type::Sphere, scene_manager_,
+      it.reset(new rviz_rendering::Shape(rviz_rendering::Shape::Type::Sphere, scene_manager_,
                                frame_node_));
 
     int cnt = 0;
@@ -39,7 +39,7 @@ namespace decomp_rviz_plugins {
       Mat3f E;
       for (int i = 0; i < 3; i++)
         for (int j = 0; j < 3; j++)
-          E(i, j) = it.E[3 * i + j];
+          E(i, j) = it.e[3 * i + j];
       Eigen::SelfAdjointEigenSolver<Mat3f> es(E);
 
       Ogre::Vector3 scale(2 * es.eigenvalues()[0], 2 * es.eigenvalues()[1],

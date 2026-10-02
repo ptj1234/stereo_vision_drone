@@ -3,11 +3,11 @@
 
 #include <decomp_basis/data_type.h>
 
-#include <OGRE/OgreVector3.h>
-#include <OGRE/OgreSceneNode.h>
-#include <OGRE/OgreSceneManager.h>
+#include <OgreVector.h>
+#include <OgreSceneNode.h>
+#include <OgreSceneManager.h>
 
-#include <rviz/ogre_helpers/billboard_line.h>
+#include <rviz_rendering/objects/billboard_line.hpp>
 
 
 namespace decomp_rviz_plugins {
@@ -24,7 +24,7 @@ public:
   void setScale(float s);
 
 private:
-  std::vector<std::unique_ptr<rviz::BillboardLine>> objs_;
+  std::vector<std::unique_ptr<rviz_rendering::BillboardLine>> objs_;
 
   Ogre::SceneNode *frame_node_;
 

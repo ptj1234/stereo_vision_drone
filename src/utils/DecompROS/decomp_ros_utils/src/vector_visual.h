@@ -2,10 +2,10 @@
 #define VECTOR_VISUAL_H
 
 #include <decomp_basis/data_type.h>
-#include <OGRE/OgreVector3.h>
-#include <OGRE/OgreSceneNode.h>
-#include <OGRE/OgreSceneManager.h>
-#include <rviz/ogre_helpers/arrow.h>
+#include <OgreVector.h>
+#include <OgreSceneNode.h>
+#include <OgreSceneManager.h>
+#include <rviz_rendering/objects/arrow.hpp>
 
 namespace decomp_rviz_plugins {
 class VectorVisual {
@@ -21,7 +21,7 @@ public:
   void setScale(float s);
 
 private:
-  std::vector<std::unique_ptr<rviz::Arrow>> objs_;
+  std::vector<std::unique_ptr<rviz_rendering::Arrow>> objs_;
 
   Ogre::SceneNode *frame_node_;
 

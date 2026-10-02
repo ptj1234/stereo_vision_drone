@@ -1,14 +1,14 @@
-#include <OGRE/OgreSceneNode.h>
-#include <OGRE/OgreSceneManager.h>
-#include <rviz/visualization_manager.h>
-#include <rviz/properties/color_property.h>
-#include <rviz/properties/float_property.h>
-#include <rviz/frame_manager.h>
+#include <OgreSceneNode.h>
+#include <OgreSceneManager.h>
+#include <rviz_common/properties/color_property.hpp>
+#include <rviz_common/properties/float_property.hpp>
+#include <rviz_common/frame_manager_iface.hpp>
+#include <rviz_common/display_context.hpp>
+#include <rviz_common/logging.hpp>
 
-#include <rviz/load_resource.h>
 
-#include <decomp_ros_msgs/EllipsoidArray.h>
-#include <rviz/message_filter_display.h>
+#include <decomp_ros_msgs/msg/ellipsoid_array.hpp>
+#include <rviz_common/message_filter_display.hpp>
 #include "ellipsoid_array_visual.h"
 
 namespace decomp_rviz_plugins {
@@ -16,7 +16,7 @@ namespace decomp_rviz_plugins {
 class EllipsoidArrayVisual;
 
 class EllipsoidArrayDisplay
-    : public rviz::MessageFilterDisplay<decomp_ros_msgs::EllipsoidArray> {
+    : public rviz_common::MessageFilterDisplay<decomp_ros_msgs::msg::EllipsoidArray> {
   Q_OBJECT
 public:
   EllipsoidArrayDisplay();
@@ -31,11 +31,11 @@ private Q_SLOTS:
   void updateColorAndAlpha();
 
 private:
-  void processMessage(const decomp_ros_msgs::EllipsoidArray::ConstPtr &msg);
+  void processMessage(decomp_ros_msgs::msg::EllipsoidArray::ConstSharedPtr msg) override;
 
   std::shared_ptr<EllipsoidArrayVisual> visual_;
 
-  rviz::ColorProperty *color_property_;
-  rviz::FloatProperty *alpha_property_;
+  rviz_common::properties::ColorProperty *color_property_;
+  rviz_common::properties::FloatProperty *alpha_property_;
 };
 }

@@ -18,7 +18,7 @@ namespace decomp_rviz_plugins {
     size_t num_faces = bds.size();
     objs_.resize(num_faces);
     for (auto &it : objs_)
-      it.reset(new rviz::BillboardLine(scene_manager_, frame_node_));
+      it.reset(new rviz_rendering::BillboardLine(scene_manager_, frame_node_));
 
     int cnt = 0;
     for (const auto &vs : bds) {

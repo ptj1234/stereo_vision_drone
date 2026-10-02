@@ -4,11 +4,12 @@
 #include <decomp_geometry/polyhedron.h>
 #include <Eigen/Eigenvalues>
 
-#include <OGRE/OgreVector3.h>
-#include <OGRE/OgreSceneNode.h>
-#include <OGRE/OgreSceneManager.h>
+#include <OgreVector.h>
+#include <OgreSceneNode.h>
+#include <OgreSceneManager.h>
 
-#include <rviz/ogre_helpers/mesh_shape.h>
+#include <OgreManualObject.h>
+#include <OgreMaterial.h>
 
 namespace decomp_rviz_plugins {
   class MeshVisual {
@@ -24,7 +25,9 @@ namespace decomp_rviz_plugins {
       void setColor(float r, float g, float b, float a);
 
     private:
-      std::unique_ptr<rviz::MeshShape> obj_;
+      // rviz2 has no MeshShape; ROS 1 rviz::MeshShape was a ManualObject triangle list
+      Ogre::ManualObject *obj_;
+      Ogre::MaterialPtr material_;
 
       Ogre::SceneNode *frame_node_;
 

@@ -1,16 +1,16 @@
-#include <decomp_ros_msgs/PolyhedronArray.h>
-#include <rviz/message_filter_display.h>
+#include <decomp_ros_msgs/msg/polyhedron_array.hpp>
+#include <rviz_common/message_filter_display.hpp>
 
-#include <rviz/properties/color_property.h>
-#include <rviz/properties/float_property.h>
-#include <rviz/properties/int_property.h>
-#include <rviz/properties/enum_property.h>
-#include <rviz/visualization_manager.h>
-#include <rviz/frame_manager.h>
-#include <OGRE/OgreSceneNode.h>
-#include <OGRE/OgreSceneManager.h>
+#include <rviz_common/properties/color_property.hpp>
+#include <rviz_common/properties/float_property.hpp>
+#include <rviz_common/properties/int_property.hpp>
+#include <rviz_common/properties/enum_property.hpp>
+#include <rviz_common/frame_manager_iface.hpp>
+#include <rviz_common/display_context.hpp>
+#include <rviz_common/logging.hpp>
+#include <OgreSceneNode.h>
+#include <OgreSceneManager.h>
 
-#include <rviz/load_resource.h>
 
 #include "mesh_visual.h"
 #include "bound_visual.h"
@@ -20,7 +20,7 @@
 
 namespace decomp_rviz_plugins {
 class PolyhedronArrayDisplay
-    : public rviz::MessageFilterDisplay<decomp_ros_msgs::PolyhedronArray> {
+    : public rviz_common::MessageFilterDisplay<decomp_ros_msgs::msg::PolyhedronArray> {
   Q_OBJECT
 public:
   PolyhedronArrayDisplay();
@@ -40,7 +40,7 @@ private Q_SLOTS:
   void updateVsScale();
 
 private:
-  void processMessage(const decomp_ros_msgs::PolyhedronArray::ConstPtr &msg);
+  void processMessage(decomp_ros_msgs::msg::PolyhedronArray::ConstSharedPtr msg) override;
   void visualizeMessage(int state);
   void visualizeMesh();
   void visualizeBound();
@@ -50,13 +50,13 @@ private:
   std::shared_ptr<BoundVisual> visual_bound_;
   std::shared_ptr<VectorVisual> visual_vector_;
 
-  rviz::ColorProperty *mesh_color_property_;
-  rviz::ColorProperty *bound_color_property_;
-  rviz::ColorProperty *vs_color_property_;
-  rviz::FloatProperty *alpha_property_;
-  rviz::FloatProperty *scale_property_;
-  rviz::FloatProperty *vs_scale_property_;
-  rviz::EnumProperty *state_property_;
+  rviz_common::properties::ColorProperty *mesh_color_property_;
+  rviz_common::properties::ColorProperty *bound_color_property_;
+  rviz_common::properties::ColorProperty *vs_color_property_;
+  rviz_common::properties::FloatProperty *alpha_property_;
+  rviz_common::properties::FloatProperty *scale_property_;
+  rviz_common::properties::FloatProperty *vs_scale_property_;
+  rviz_common::properties::EnumProperty *state_property_;
 
   Ogre::Vector3 position_;
   Ogre::Quaternion orientation_;

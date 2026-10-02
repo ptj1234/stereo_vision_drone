@@ -4,30 +4,30 @@ namespace decomp_rviz_plugins {
 
 PolyhedronArrayDisplay::PolyhedronArrayDisplay() {
   mesh_color_property_ =
-      new rviz::ColorProperty("MeshColor", QColor(0, 170, 255), "Mesh color.",
+      new rviz_common::properties::ColorProperty("MeshColor", QColor(0, 170, 255), "Mesh color.",
                               this, SLOT(updateMeshColorAndAlpha()));
   bound_color_property_ =
-      new rviz::ColorProperty("BoundColor", QColor(255, 0, 0), "Bound color.",
+      new rviz_common::properties::ColorProperty("BoundColor", QColor(255, 0, 0), "Bound color.",
                               this, SLOT(updateBoundColorAndAlpha()));
 
-  alpha_property_ = new rviz::FloatProperty(
+  alpha_property_ = new rviz_common::properties::FloatProperty(
       "Alpha", 0.2,
       "0 is fully transparent, 1.0 is fully opaque, only affect mesh", this,
       SLOT(updateMeshColorAndAlpha()));
 
-  scale_property_ = new rviz::FloatProperty("Scale", 0.1, "bound scale.", this,
+  scale_property_ = new rviz_common::properties::FloatProperty("Scale", 0.1, "bound scale.", this,
                                             SLOT(updateScale()));
 
-  vs_scale_property_ = new rviz::FloatProperty("VsScale", 1.0, "Vs scale.", this,
+  vs_scale_property_ = new rviz_common::properties::FloatProperty("VsScale", 1.0, "Vs scale.", this,
                                                SLOT(updateVsScale()));
 
   vs_color_property_ =
-    new rviz::ColorProperty("VsColor", QColor(0, 255, 0), "Vs color.",
+    new rviz_common::properties::ColorProperty("VsColor", QColor(0, 255, 0), "Vs color.",
                             this, SLOT(updateVsColorAndAlpha()));
 
 
 
-  state_property_ = new rviz::EnumProperty(
+  state_property_ = new rviz_common::properties::EnumProperty(
       "State", "Mesh", "A Polygon can be represented as two states: Mesh and "
                        "Bound, this option allows selecting visualizing Polygon"
                        "in corresponding state",
@@ -50,11 +50,9 @@ void PolyhedronArrayDisplay::reset() {
   visual_vector_ = nullptr;
 }
 
-void PolyhedronArrayDisplay::processMessage(const decomp_ros_msgs::PolyhedronArray::ConstPtr &msg) {
-  if (!context_->getFrameManager()->getTransform(
-          msg->header.frame_id, msg->header.stamp, position_, orientation_)) {
-    ROS_DEBUG("Error transforming from frame '%s' to frame '%s'",
-              msg->header.frame_id.c_str(), qPrintable(fixed_frame_));
+void PolyhedronArrayDisplay::processMessage(decomp_ros_msgs::msg::PolyhedronArray::ConstSharedPtr msg) {
+  if (!context_->getFrameManager()->getTransform(msg->header, position_, orientation_)) {
+    RVIZ_COMMON_LOG_DEBUG("Error transforming from frame '" + msg->header.frame_id + "' to frame '" + fixed_frame_.toStdString() + "'");
     return;
   }
 
@@ -182,5 +180,5 @@ void PolyhedronArrayDisplay::updateVsColorAndAlpha() {
 }
 }
 
-#include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(decomp_rviz_plugins::PolyhedronArrayDisplay, rviz::Display)
+#include <pluginlib/class_list_macros.hpp>
+PLUGINLIB_EXPORT_CLASS(decomp_rviz_plugins::PolyhedronArrayDisplay, rviz_common::Display)
