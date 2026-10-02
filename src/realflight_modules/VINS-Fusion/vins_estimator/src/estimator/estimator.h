@@ -11,8 +11,8 @@
  
 #include <thread>
 #include <mutex>
-#include <std_msgs/Header.h>
-#include <std_msgs/Float32.h>
+#include <std_msgs/msg/header.hpp>
+#include <std_msgs/msg/float32.hpp>
 #include <ceres/ceres.h>
 #include <unordered_map>
 #include <queue>

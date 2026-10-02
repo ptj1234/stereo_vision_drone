@@ -19,7 +19,7 @@ using namespace std;
 #include <eigen3/Eigen/Dense>
 using namespace Eigen;
 
-#include <ros/console.h>
+#include "../utility/ros_compat.h"
 
 class MotionEstimator
 {

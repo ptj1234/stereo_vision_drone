@@ -15,8 +15,8 @@
 #include <string>
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#include <ros/ros.h>
-#include <sensor_msgs/NavSatFix.h>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/nav_sat_fix.hpp>
 #include "estimator/estimator.h"
 #include "utility/visualization.h"
 
@@ -24,29 +24,29 @@ using namespace std;
 using namespace Eigen;
 
 Estimator estimator;
-ros::Publisher pubGPS;
+rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr pubGPS;
 
 int main(int argc, char** argv)
 {
-	ros::init(argc, argv, "vins_estimator");
-	ros::NodeHandle n("~");
-	ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info);
+	rclcpp::init(argc, argv);
+	auto n = rclcpp::Node::make_shared("vins_estimator");
+	std::vector<std::string> args = rclcpp::remove_ros_arguments(argc, argv);
 
-	pubGPS = n.advertise<sensor_msgs::NavSatFix>("/gps", 1000);
+	pubGPS = n->create_publisher<sensor_msgs::msg::NavSatFix>("/gps", 1000);
 
-	if(argc != 3)
+	if(args.size() != 3)
 	{
-		printf("please intput: rosrun vins kitti_gps_test [config file] [data folder] \n"
-			   "for example: rosrun vins kitti_gps_test "
+		printf("please intput: ros2 run vins kitti_gps_test [config file] [data folder] \n"
+			   "for example: ros2 run vins kitti_gps_test "
 			   "~/catkin_ws/src/VINS-Fusion/config/kitti_raw/kitti_10_03_config.yaml "
 			   "/media/tony-ws1/disk_D/kitti/2011_10_03/2011_10_03_drive_0027_sync/ \n");
 		return 1;
 	}
 
-	string config_file = argv[1];
-	printf("config_file: %s\n", argv[1]);
-	string sequence = argv[2];
-	printf("read sequence: %s\n", argv[2]);
+	string config_file = args[1];
+	printf("config_file: %s\n", config_file.c_str());
+	string sequence = args[2];
+	printf("read sequence: %s\n", sequence.c_str());
 	string dataPath = sequence + "/";
 
 	// load image list
@@ -103,7 +103,7 @@ int main(int argc, char** argv)
 
 	for (size_t i = 0; i < imageTimeList.size(); i++)
 	{	
-		if(ros::ok())
+		if(rclcpp::ok())
 		{
 			if(imageTimeList[0] < GPSTimeList[0])
 				baseTime = imageTimeList[0];
@@ -155,9 +155,9 @@ int main(int argc, char** argv)
 
 			std::fclose(GPSFile);
 
-			sensor_msgs::NavSatFix gps_position;
+			sensor_msgs::msg::NavSatFix gps_position;
 			gps_position.header.frame_id = "NED";
-			gps_position.header.stamp = ros::Time(imgTime);
+			gps_position.header.stamp = toRosTime(imgTime);
 			gps_position.status.status = navstat;
 			gps_position.status.service = numsats;
 			gps_position.latitude  = lat;
@@ -165,7 +165,7 @@ int main(int argc, char** argv)
 			gps_position.altitude  = alt;
 			gps_position.position_covariance[0] = pos_accuracy;
 			//printf("pos_accuracy %f \n", pos_accuracy);
-			pubGPS.publish(gps_position);
+			pubGPS->publish(gps_position);
 
 			estimator.inputImage(imgTime, imLeft, imRight);
 			
@@ -185,6 +185,7 @@ int main(int argc, char** argv)
 	}
 	if(outFile != NULL)
 		fclose (outFile);
+	rclcpp::shutdown();
 	return 0;
 }
 

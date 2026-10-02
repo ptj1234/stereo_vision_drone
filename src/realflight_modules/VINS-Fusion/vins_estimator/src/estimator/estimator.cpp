@@ -320,9 +320,9 @@ void Estimator::processMeasurements()
 
             printStatistics(*this, 0);
 
-            std_msgs::Header header;
+            std_msgs::msg::Header header;
             header.frame_id = "world";
-            header.stamp = ros::Time(feature.first);
+            header.stamp = toRosTime(feature.first);
 
             pubOdometry(*this, header);
             pubKeyPoses(*this, header);
