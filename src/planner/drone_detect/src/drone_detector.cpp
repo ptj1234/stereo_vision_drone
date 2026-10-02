@@ -1,32 +1,34 @@
 #include "drone_detector/drone_detector.h"
+#include <plan_env/param_helper.hpp>
 
 // STD
 #include <string>
 
 namespace detect {
 
-DroneDetector::DroneDetector(ros::NodeHandle& nodeHandle)
-    : nh_(nodeHandle)
+DroneDetector::DroneDetector(const rclcpp::Node::SharedPtr& node)
+    : nh_(node)
 {
   readParameters();
 
-  // depth_img_sub_.reset(new message_filters::Subscriber<sensor_msgs::Image>(nh_, "depth", 50, ros::TransportHints().tcpNoDelay()));
-  // colordepth_img_sub_.reset(new message_filters::Subscriber<sensor_msgs::Image>(nh_, "colordepth", 50));
-  // camera_pos_sub_.reset(new message_filters::Subscriber<geometry_msgs::PoseStamped>(nh_, "camera_pose", 50));
+  // depth_img_sub_.reset(new message_filters::Subscriber<sensor_msgs::msg::Image>(nh_, "depth", 50, ros::TransportHints().tcpNoDelay()));
+  // colordepth_img_sub_.reset(new message_filters::Subscriber<sensor_msgs::msg::Image>(nh_, "colordepth", 50));
+  // camera_pos_sub_.reset(new message_filters::Subscriber<geometry_msgs::msg::PoseStamped>(nh_, "camera_pose", 50));
 
-  my_odom_sub_ = nh_.subscribe("odometry", 100, &DroneDetector::rcvMyOdomCallback, this, ros::TransportHints().tcpNoDelay());
-  depth_img_sub_ = nh_.subscribe("depth", 50, &DroneDetector::rcvDepthImgCallback, this, ros::TransportHints().tcpNoDelay());
+  using std::placeholders::_1;
+  my_odom_sub_ = nh_->create_subscription<nav_msgs::msg::Odometry>("~/odometry", 100, std::bind(&DroneDetector::rcvMyOdomCallback, this, _1));
+  depth_img_sub_ = nh_->create_subscription<sensor_msgs::msg::Image>("~/depth", rclcpp::SensorDataQoS().keep_last(50), std::bind(&DroneDetector::rcvDepthImgCallback, this, _1));
   // sync_depth_color_img_pose_->registerCallback(boost::bind(&DroneDetector::rcvDepthColorCamPoseCallback, this, _1, _2, _3));
 
   // drone0_odom_sub_ = nh_.subscribe("drone0", 50, &DroneDetector::rcvDrone0OdomCallback, this); 
   // drone1_odom_sub_ = nh_.subscribe("drone1", 50, &DroneDetector::rcvDrone1OdomCallback, this); 
   // drone2_odom_sub_ = nh_.subscribe("drone2", 50, &DroneDetector::rcvDrone2OdomCallback, this); 
-  droneX_odom_sub_ = nh_.subscribe("/others_odom", 100, &DroneDetector::rcvDroneXOdomCallback, this, ros::TransportHints().tcpNoDelay());
+  droneX_odom_sub_ = nh_->create_subscription<nav_msgs::msg::Odometry>("/others_odom", 100, std::bind(&DroneDetector::rcvDroneXOdomCallback, this, _1));
 
-  new_depth_img_pub_ = nh_.advertise<sensor_msgs::Image>("new_depth_image", 50);
-  debug_depth_img_pub_ = nh_.advertise<sensor_msgs::Image>("debug_depth_image", 50);
+  new_depth_img_pub_ = nh_->create_publisher<sensor_msgs::msg::Image>("~/new_depth_image", 50);
+  debug_depth_img_pub_ = nh_->create_publisher<sensor_msgs::msg::Image>("~/debug_depth_image", 50);
 
-  debug_info_pub_ = nh_.advertise<std_msgs::String>("/debug_info", 50);
+  debug_info_pub_ = nh_->create_publisher<std_msgs::msg::String>("/debug_info", 50);
 
   cam2body_ << 0.0, 0.0, 1.0, 0.0,
       -1.0, 0.0, 0.0, 0.0,
@@ -36,10 +38,10 @@ DroneDetector::DroneDetector(ros::NodeHandle& nodeHandle)
   // init drone_pose_err_pub
   for(int i = 0; i < max_drone_num_; i++) {
     if(i != my_id_)
-      drone_pose_err_pub_[i] = nh_.advertise<geometry_msgs::PoseStamped>("drone"+std::to_string(i)+"to"+std::to_string(my_id_)+"_pose_err", 50);
+      drone_pose_err_pub_[i] = nh_->create_publisher<geometry_msgs::msg::PoseStamped>("~/drone"+std::to_string(i)+"to"+std::to_string(my_id_)+"_pose_err", 50);
   }
 
-  ROS_INFO("Successfully launched node.");
+  RCLCPP_INFO(nh_->get_logger(), "Successfully launched node.");
 }
 
 DroneDetector::~DroneDetector()
@@ -48,21 +50,21 @@ DroneDetector::~DroneDetector()
 
 void DroneDetector::readParameters()
 {
-  // camera params
-  nh_.getParam("cam_width", img_width_);
-  nh_.getParam("cam_height", img_height_);
-  nh_.getParam("cam_fx", fx_);
-  nh_.getParam("cam_fy", fy_);
-  nh_.getParam("cam_cx", cx_);
-  nh_.getParam("cam_cy", cy_);
+  // camera params (ROS 1 getParam left these unset when missing; defaults follow config/*.yaml)
+  param_helper::param(nh_, "cam_width", img_width_, 640);
+  param_helper::param(nh_, "cam_height", img_height_, 480);
+  param_helper::param(nh_, "cam_fx", fx_, 386.02557373046875);
+  param_helper::param(nh_, "cam_fy", fy_, 386.02557373046875);
+  param_helper::param(nh_, "cam_cx", cx_, 321.8554382324219);
+  param_helper::param(nh_, "cam_cy", cy_, 241.2396240234375);
 
   // 
-  nh_.getParam("debug_flag", debug_flag_);
-  nh_.getParam("pixel_ratio", pixel_ratio_);
-  nh_.getParam("my_id", my_id_);
-  nh_.getParam("estimate/drone_width", drone_width_);
-  nh_.getParam("estimate/drone_height", drone_height_);
-  nh_.getParam("estimate/max_pose_error", max_pose_error_);
+  param_helper::param(nh_, "debug_flag", debug_flag_, false);
+  param_helper::param(nh_, "pixel_ratio", pixel_ratio_, 0.1);
+  param_helper::param(nh_, "my_id", my_id_, 0);
+  param_helper::param(nh_, "estimate/drone_width", drone_width_, 0.5);
+  param_helper::param(nh_, "estimate/drone_height", drone_height_, 0.2);
+  param_helper::param(nh_, "estimate/max_pose_error", max_pose_error_, 0.4);
 
   max_pose_error2_ = max_pose_error_*max_pose_error_;
 }
@@ -120,8 +122,9 @@ inline bool DroneDetector::isInSensorRange(const Eigen::Vector2i &pixel)
     return false;
 }
 
-void DroneDetector::rcvMyOdomCallback(const nav_msgs::Odometry& odom)
+void DroneDetector::rcvMyOdomCallback(const nav_msgs::msg::Odometry::ConstSharedPtr odom_msg)
 {
+  const nav_msgs::msg::Odometry& odom = *odom_msg;
   my_odom_ = odom;
   Eigen::Matrix4d body2world = Eigen::Matrix4d::Identity();
 
@@ -157,14 +160,14 @@ void DroneDetector::rcvMyOdomCallback(const nav_msgs::Odometry& odom)
   // br.sendTransform(tf::StampedTransform(transform, my_last_odom_stamp, "world", "camera")); 
   //publish transform from world frame to quadrotor frame.
 }
-void DroneDetector::rcvDepthImgCallback(const sensor_msgs::ImageConstPtr& depth_img)
+void DroneDetector::rcvDepthImgCallback(const sensor_msgs::msg::Image::ConstSharedPtr depth_img)
 {
   /* get depth image */
   cv_bridge::CvImagePtr cv_ptr;
   cv_ptr = cv_bridge::toCvCopy(depth_img, depth_img->encoding);
   cv_ptr->image.copyTo(depth_img_);
 
-  debug_start_time_ = ros::Time::now();
+  debug_start_time_ = nh_->now();
 
   Eigen::Vector2i true_pixel[max_drone_num_];
   for (int i = 0; i < max_drone_num_; i++) {
@@ -185,14 +188,14 @@ void DroneDetector::rcvDepthImgCallback(const sensor_msgs::ImageConstPtr& depth_
       } 
     }
   }  
-  debug_end_time_ = ros::Time::now();
+  debug_end_time_ = nh_->now();
   // ROS_WARN("cost_total_time = %lf", (debug_end_time_ - debug_start_time_).toSec()*1000.0);
   out_msg.header = depth_img->header;
   out_msg.encoding = depth_img->encoding;
   out_msg.image = depth_img_.clone();
-  new_depth_img_pub_.publish(out_msg.toImageMsg());
+  new_depth_img_pub_->publish(*out_msg.toImageMsg());
 
-  std_msgs::String msg;
+  std_msgs::msg::String msg;
   std::stringstream ss;
   if(debug_flag_) {
     for (int i = 0; i < max_drone_num_; i++) {
@@ -213,13 +216,13 @@ void DroneDetector::rcvDepthImgCallback(const sensor_msgs::ImageConstPtr& depth_
       out_msg.header = depth_img->header;
       out_msg.encoding = depth_img->encoding;
       out_msg.image = depth_img_.clone();
-      debug_depth_img_pub_.publish(out_msg.toImageMsg()); 
+      debug_depth_img_pub_->publish(*out_msg.toImageMsg()); 
       msg.data = ss.str();
-      debug_info_pub_.publish(msg);
+      debug_info_pub_->publish(msg);
   }
 }
 
-void DroneDetector::rcvDroneOdomCallbackBase(const nav_msgs::Odometry& odom, int drone_id)
+void DroneDetector::rcvDroneOdomCallbackBase(const nav_msgs::msg::Odometry& odom, int drone_id)
 {
   if (drone_id == my_id_) {
     return;
@@ -251,28 +254,31 @@ void DroneDetector::rcvDroneOdomCallbackBase(const nav_msgs::Odometry& odom, int
   }
 }
 
-void DroneDetector::rcvDrone0OdomCallback(const nav_msgs::Odometry& odom)
+void DroneDetector::rcvDrone0OdomCallback(const nav_msgs::msg::Odometry::ConstSharedPtr odom)
 {
-  rcvDroneOdomCallbackBase(odom, 0);
+  rcvDroneOdomCallbackBase(*odom, 0);
 }
 
-void DroneDetector::rcvDrone1OdomCallback(const nav_msgs::Odometry& odom)
+void DroneDetector::rcvDrone1OdomCallback(const nav_msgs::msg::Odometry::ConstSharedPtr odom)
 {
-  rcvDroneOdomCallbackBase(odom, 1);
+  rcvDroneOdomCallbackBase(*odom, 1);
 }
 
-void DroneDetector::rcvDrone2OdomCallback(const nav_msgs::Odometry& odom)
+void DroneDetector::rcvDrone2OdomCallback(const nav_msgs::msg::Odometry::ConstSharedPtr odom)
 {
-  rcvDroneOdomCallbackBase(odom, 2);
+  rcvDroneOdomCallbackBase(*odom, 2);
 }
 
-void DroneDetector::rcvDroneXOdomCallback(const nav_msgs::Odometry& odom)
+void DroneDetector::rcvDroneXOdomCallback(const nav_msgs::msg::Odometry::ConstSharedPtr odom)
 {
-  std::string numstr = odom.child_frame_id.substr(6);
   try
   {
+    std::string numstr = odom->child_frame_id.substr(6);
     int drone_id = std::stoi(numstr);
-    rcvDroneOdomCallbackBase(odom, drone_id);
+    // per-drone state arrays hold max_drone_num_ entries
+    if (drone_id < 0 || drone_id >= max_drone_num_)
+      return;
+    rcvDroneOdomCallbackBase(*odom, drone_id);
   }
   catch(const std::exception& e)
   {
@@ -402,13 +408,13 @@ void DroneDetector::detect(int drone_id, Eigen::Vector2i &true_pixel)
     pose_error = cam2world_*true_pose_cam - drone_pose_world_[drone_id];
     debug_detect_result_[drone_id] = 2;
 
-    geometry_msgs::PoseStamped out_msg;
+    geometry_msgs::msg::PoseStamped out_msg;
     out_msg.header.stamp = my_last_camera_stamp_;
-    out_msg.header.frame_id = "/drone_detect";
+    out_msg.header.frame_id = "drone_detect";
     out_msg.pose.position.x = pose_error(0);
     out_msg.pose.position.y = pose_error(1);
     out_msg.pose.position.z = pose_error(2);
-    drone_pose_err_pub_[drone_id].publish(out_msg);
+    drone_pose_err_pub_[drone_id]->publish(out_msg);
 
   } else {
     // ROS_WARN("NOT FOUND");
@@ -417,7 +423,7 @@ void DroneDetector::detect(int drone_id, Eigen::Vector2i &true_pixel)
 }
 
 void DroneDetector::test() {
-  ROS_WARN("my_id = %d", my_id_);
+  RCLCPP_WARN(nh_->get_logger(), "my_id = %d", my_id_);
 }
 
 } /* namespace */

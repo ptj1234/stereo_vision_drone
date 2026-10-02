@@ -1,14 +1,15 @@
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include "drone_detector/drone_detector.h"
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "drone_detect");
-  ros::NodeHandle nh("~");
+  rclcpp::init(argc, argv);
+  auto nh = rclcpp::Node::make_shared("drone_detect");
 
   detect::DroneDetector drone_detector(nh);
   drone_detector.test();
 
-  ros::spin();
+  rclcpp::spin(nh);
+  rclcpp::shutdown();
   return 0;
 }
