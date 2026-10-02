@@ -27,40 +27,47 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef RVIZ_POSE_TOOL_H
-#define RVIZ_POSE_TOOL_H
+#ifndef RVIZ_PLUGINS_POSE_TOOL_H
+#define RVIZ_PLUGINS_POSE_TOOL_H
 
-#include <OGRE/OgreVector3.h>
+#include <memory>
+#include <vector>
 
-#include <QCursor>
+#include <OgreVector.h>
 
-#include <ros/ros.h>
+#include <rviz_common/tool.hpp>
+#include <rviz_common/viewport_mouse_event.hpp>
 
-#include "rviz/tool.h"
-
-namespace rviz
+namespace rviz_rendering
 {
 class Arrow;
-class DisplayContext;
+class ViewportProjectionFinder;
+}
 
-class Pose3DTool : public Tool
+namespace rviz_plugins
+{
+
+// 3D pose tool: left-drag sets position/heading on z=0, adding the right
+// button while dragging lifts/lowers the goal height.
+class Pose3DTool : public rviz_common::Tool
 {
 public:
   Pose3DTool();
-  virtual ~Pose3DTool();
+  ~Pose3DTool() override;
 
-  virtual void onInitialize();
+  void onInitialize() override;
 
-  virtual void activate();
-  virtual void deactivate();
+  void activate() override;
+  void deactivate() override;
 
-  virtual int processMouseEvent(ViewportMouseEvent& event);
+  int processMouseEvent(rviz_common::ViewportMouseEvent& event) override;
 
 protected:
   virtual void onPoseSet(double x, double y, double z, double theta) = 0;
 
-  Arrow*              arrow_;
-  std::vector<Arrow*> arrow_array;
+  std::unique_ptr<rviz_rendering::Arrow>              arrow_;
+  std::vector<std::unique_ptr<rviz_rendering::Arrow>> arrow_array;
+  std::shared_ptr<rviz_rendering::ViewportProjectionFinder> projection_finder_;
 
   enum State
   {
@@ -72,6 +79,7 @@ protected:
 
   Ogre::Vector3 pos_;
 };
-}
+
+}  // namespace rviz_plugins
 
 #endif

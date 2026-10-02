@@ -27,46 +27,52 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef RVIZ_GOAL_TOOL_H
-#define RVIZ_GOAL_TOOL_H
+#ifndef RVIZ_PLUGINS_GOAL_TOOL_H
+#define RVIZ_PLUGINS_GOAL_TOOL_H
 
 #ifndef Q_MOC_RUN  // See: https://bugreports.qt-project.org/browse/QTBUG-22829
 # include <QObject>
 
-# include <ros/ros.h>
+# include <rclcpp/rclcpp.hpp>
+# include <geometry_msgs/msg/pose_stamped.hpp>
+# include <quadrotor_msgs/msg/goal_set.hpp>
 
 # include "pose_tool.h"
 #endif
 
-namespace rviz
+namespace rviz_common
 {
-class Arrow;
-class DisplayContext;
+namespace properties
+{
 class StringProperty;
+}
+}
+
+namespace rviz_plugins
+{
 
 class Goal3DTool: public Pose3DTool
 {
 Q_OBJECT
 public:
   Goal3DTool();
-  virtual ~Goal3DTool() {}
-  virtual void onInitialize();
+  ~Goal3DTool() override {}
+  void onInitialize() override;
 
 protected:
-  virtual void onPoseSet(double x, double y, double z, double theta);
+  void onPoseSet(double x, double y, double z, double theta) override;
 
 private Q_SLOTS:
   void updateTopic();
 
 private:
-  ros::NodeHandle nh_;
-  ros::Publisher pub_goal_, pub_droneID_goal_;
+  rclcpp::Node::SharedPtr node_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_goal_;
+  rclcpp::Publisher<quadrotor_msgs::msg::GoalSet>::SharedPtr pub_droneID_goal_;
 
-  StringProperty* topic_property_;
+  rviz_common::properties::StringProperty* topic_property_;
 };
 
-}
+}  // namespace rviz_plugins
 
 #endif
-
-
