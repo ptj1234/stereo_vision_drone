@@ -145,7 +145,7 @@ void vio_callback(const nav_msgs::msg::Odometry::ConstSharedPtr &pose_msg)
 
 
     // write result to file
-    std::ofstream foutC("/home/tony-ws1/output/vio_global.txt", ios::app);
+    std::ofstream foutC("/home/nvidia/vins_output/vio_global.txt", ios::app);
     foutC.setf(ios::fixed, ios::floatfield);
     foutC.precision(0);
     foutC << toSec(pose_msg->header.stamp) * 1e9 << ",";
